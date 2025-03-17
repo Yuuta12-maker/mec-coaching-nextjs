@@ -22,16 +22,17 @@ export default function Dashboard({ todaySessionsData, clientStatusData }) {
     setIsLoading(false);
   }, [todaySessionsData, clientStatusData]);
   
-  if (status === 'loading') {
-    return <div className="loading"><div className="spinner"></div></div>;
-  }
+  // 緊急対応：認証チェックを一時的に無効にする
+  // if (status === 'loading') {
+  //   return <div className="loading"><div className="spinner"></div></div>;
+  // }
   
-  if (!session) {
-    return null; // 認証リダイレクトを処理中
-  }
+  // if (!session) {
+  //   return null; // 認証リダイレクトを処理中
+  // }
   
   return (
-    <Layout>
+    <Layout forceAccess={true}>
       <Head>
         <title>ダッシュボード | マインドエンジニアリング・コーチング</title>
       </Head>
@@ -126,16 +127,17 @@ export default function Dashboard({ todaySessionsData, clientStatusData }) {
 }
 
 export async function getServerSideProps(context) {
-  const session = await getSession(context);
+  // 緊急対応：認証チェックを一時的に無効にする
+  // const session = await getSession(context);
   
-  if (!session) {
-    return {
-      redirect: {
-        destination: '/auth/signin',
-        permanent: false,
-      },
-    };
-  }
+  // if (!session) {
+  //   return {
+  //     redirect: {
+  //       destination: '/auth/signin',
+  //       permanent: false,
+  //     },
+  //   };
+  // }
   
   try {
     // 今日のセッションデータを取得
