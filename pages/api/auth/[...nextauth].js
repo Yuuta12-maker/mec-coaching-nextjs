@@ -27,6 +27,9 @@ export const authOptions = {
     signIn: '/auth/signin',
     error: '/auth/error',
   },
+  secret: process.env.NEXTAUTH_SECRET,
+  // デプロイ環境のURLを設定
+  trustHost: true,
 };
 
 export default NextAuth(authOptions);
