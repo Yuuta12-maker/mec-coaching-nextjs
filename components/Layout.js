@@ -60,15 +60,15 @@ export default function Layout({ children, forceAccess = false }) {
     return null; // クライアントサイドでレンダリングするまで何も表示しない
   }
   
-  // 緊急対応：認証チェックを一時的に無効にする
-  // // 認証されておらず、バイパスもない場合は何も表示しない
-  // if (status === 'unauthenticated' && !bypassAuth && !forceAccess) {
-  //   // 認証関連ページにいる場合はレイアウトを表示しない
-  //   if (router.pathname.startsWith('/auth/')) {
-  //     return <>{children}</>;
-  //   }
-  //   return null;
-  // }
+  // 認証チェックを復活させる
+  // 認証されておらず、バイパスもない場合は何も表示しない
+  if (status === 'unauthenticated' && !bypassAuth && !forceAccess) {
+    // 認証関連ページにいる場合はレイアウトを表示しない
+    if (router.pathname.startsWith('/auth/')) {
+      return <>{children}</>;
+    }
+    return null;
+  }
 
   return (
     <div className="app-container">
