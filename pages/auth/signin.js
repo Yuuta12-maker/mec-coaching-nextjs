@@ -1,8 +1,21 @@
-import { signIn, getCsrfToken } from 'next-auth/react';
+import { signIn, getCsrfToken, getProviders } from 'next-auth/react';
 import Head from 'next/head';
 import Image from 'next/image';
+import { useState } from 'react';
 
-export default function SignIn({ csrfToken }) {
+export default function SignIn({ csrfToken, providers }) {
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleSignIn = async (providerId) => {
+    try {
+      setIsLoading(true);
+      await signIn(providerId, { callbackUrl: '/' });
+    } catch (error) {
+      console.error('サインインエラー:', error);
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <Head>
@@ -17,13 +30,16 @@ export default function SignIn({ csrfToken }) {
           <p className="text-gray-600 mt-2">業務管理システム</p>
         </div>
         
-        <form method="post" action="/api/auth/signin/google">
-          <input name="csrfToken" type="hidden" defaultValue={csrfToken} />
-          <button
-            type="button"
-            onClick={() => signIn('google', { callbackUrl: '/' })}
-            className="w-full flex items-center justify-center bg-white border border-gray-300 rounded-md py-3 px-4 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary"
-          >
+        {/* Googleログインボタン */}
+        <button
+          type="button"
+          onClick={() => handleSignIn('google')}
+          disabled={isLoading}
+          className="w-full flex items-center justify-center bg-white border border-gray-300 rounded-md py-3 px-4 text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          {isLoading ? (
+            <span className="mr-2 inline-block h-4 w-4 animate-spin rounded-full border-2 border-solid border-current border-r-transparent"></span>
+          ) : (
             <svg
               className="w-5 h-5 mr-2"
               viewBox="0 0 24 24"
@@ -47,9 +63,9 @@ export default function SignIn({ csrfToken }) {
                 fill="#1976D2"
               />
             </svg>
-            Googleアカウントでログイン
-          </button>
-        </form>
+          )}
+          Googleアカウントでログイン
+        </button>
         
         <div className="mt-6 text-sm text-center text-gray-500">
           <p>このシステムは管理者専用です</p>
@@ -60,9 +76,11 @@ export default function SignIn({ csrfToken }) {
 }
 
 export async function getServerSideProps(context) {
+  const providers = await getProviders();
   return {
     props: {
       csrfToken: await getCsrfToken(context),
+      providers: providers || {},
     },
   };
 }
