@@ -5,7 +5,7 @@ import Layout from '../components/Layout';
 import { getSheetData, config } from '../lib/sheets';
 
 export default function Dashboard({ todaySessionsData, clientStatusData }) {
-  const { data: session, status } = useSession();
+  const { data: session } = useSession();
   const [todaySessions, setTodaySessions] = useState([]);
   const [clientStatus, setClientStatus] = useState({});
   const [isLoading, setIsLoading] = useState(true);
@@ -22,15 +22,6 @@ export default function Dashboard({ todaySessionsData, clientStatusData }) {
     setIsLoading(false);
   }, [todaySessionsData, clientStatusData]);
   
-  // 認証チェックを復活させる
-  if (status === 'loading') {
-    return <div className="loading"><div className="spinner"></div></div>;
-  }
-  
-  if (!session) {
-    return null; // 認証リダイレクトを処理中
-  }
-  
   return (
     <Layout>
       <Head>
@@ -40,6 +31,11 @@ export default function Dashboard({ todaySessionsData, clientStatusData }) {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-800">ダッシュボード</h1>
         <p className="text-gray-600">マインドエンジニアリング・コーチング業務管理システム</p>
+        {session && (
+          <div className="mt-2 p-2 bg-green-100 text-green-800 rounded">
+            ログインユーザー: {session.user.name || session.user.email}
+          </div>
+        )}
       </div>
       
       {isLoading ? (
@@ -127,17 +123,8 @@ export default function Dashboard({ todaySessionsData, clientStatusData }) {
 }
 
 export async function getServerSideProps(context) {
-  // 認証チェックを復活させる
+  // getSessionはアプリ全体で管理するので、ここでは条件付きリダイレクトを行わない
   const session = await getSession(context);
-  
-  if (!session) {
-    return {
-      redirect: {
-        destination: '/auth/signin',
-        permanent: false,
-      },
-    };
-  }
   
   try {
     // 今日のセッションデータを取得
