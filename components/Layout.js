@@ -6,13 +6,26 @@ import Link from 'next/link';
 export default function Layout({ children }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [bypassAuth, setBypassAuth] = useState(false);
   const router = useRouter();
   const { data: session, status } = useSession();
   
   // マウント時にのみクライアントサイドレンダリングを有効にする
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    
+    // 緊急バイパス認証をチェック
+    const hasBypassAuth = localStorage.getItem('mec-bypass-auth') === 'true';
+    setBypassAuth(hasBypassAuth);
+    
+    // 認証されていない場合かつバイパスもない場合はログインページへリダイレクト
+    if (status === 'unauthenticated' && !hasBypassAuth) {
+      // 既にログイン画面またはエラー画面にいる場合はリダイレクトしない
+      if (!router.pathname.startsWith('/auth/')) {
+        router.push('/auth/signin');
+      }
+    }
+  }, [status, router]);
   
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -29,10 +42,31 @@ export default function Layout({ children }) {
     return router.pathname === path || router.pathname.startsWith(`${path}/`);
   };
   
+  // 認証離脱処理
+  const handleSignOut = () => {
+    // バイパス認証を使用していた場合はローカルストレージをクリア
+    if (bypassAuth) {
+      localStorage.removeItem('mec-bypass-auth');
+      router.push('/auth/signin');
+    } else {
+      // 通常のサインアウト
+      signOut({ callbackUrl: '/auth/signin' });
+    }
+  };
+  
   if (!isMounted) {
     return null; // クライアントサイドでレンダリングするまで何も表示しない
   }
   
+  // 認証されておらず、バイパスもない場合は何も表示しない
+  if (status === 'unauthenticated' && !bypassAuth) {
+    // 認証関連ページにいる場合はレイアウトを表示しない
+    if (router.pathname.startsWith('/auth/')) {
+      return <>{children}</>;
+    }
+    return null;
+  }
+
   return (
     <div className="app-container">
       <div className="min-h-screen flex flex-col">
@@ -48,17 +82,20 @@ export default function Layout({ children }) {
             <span className="text-lg font-medium text-primary">マインドエンジニアリング・コーチング</span>
           </div>
           
-          {session && (
-            <div className="flex items-center">
-              <span className="mr-2 hidden sm:block text-sm text-gray-600">{session.user.name || ''}</span>
-              <button 
-                onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-                className="text-gray-600 hover:text-primary"
-              >
-                <span className="material-icons">logout</span>
-              </button>
-            </div>
-          )}
+          <div className="flex items-center">
+            {bypassAuth && (
+              <span className="mr-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">緊急モード</span>
+            )}
+            <span className="mr-2 hidden sm:block text-sm text-gray-600">
+              {session?.user?.name || '管理者'}
+            </span>
+            <button 
+              onClick={handleSignOut}
+              className="text-gray-600 hover:text-primary"
+            >
+              <span className="material-icons">logout</span>
+            </button>
+          </div>
         </header>
         
         {/* デスクトップナビゲーション（PC用） */}
@@ -114,7 +151,7 @@ export default function Layout({ children }) {
               <span>クライアント</span>
             </Link>
             <Link href="/sessions" className={`mobile-nav-link ${isActive('/sessions') ? 'active' : ''}`} onClick={toggleMobileMenu}>
-              <span className="material-icons">event</span>
+              <span className="material-icons">session</span>
               <span>セッション</span>
             </Link>
             <Link href="/payments" className={`mobile-nav-link ${isActive('/payments') ? 'active' : ''}`} onClick={toggleMobileMenu}>
@@ -123,19 +160,20 @@ export default function Layout({ children }) {
             </Link>
           </nav>
           
-          {session && (
-            <div className="border-t p-4">
-              <div className="flex items-center justify-between">
-                <div className="text-sm text-gray-600">{session.user.name || ''}</div>
-                <button 
-                  onClick={() => signOut({ callbackUrl: '/auth/signin' })}
-                  className="text-gray-600 hover:text-primary"
-                >
-                  <span className="material-icons">logout</span>
-                </button>
+          <div className="border-t p-4">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                {session?.user?.name || '管理者'}
+                {bypassAuth && <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">緊急モード</span>}
               </div>
+              <button 
+                onClick={handleSignOut}
+                className="text-gray-600 hover:text-primary"
+              >
+                <span className="material-icons">logout</span>
+              </button>
             </div>
-          )}
+          </div>
         </div>
       </div>
       
@@ -186,6 +224,22 @@ export default function Layout({ children }) {
           color: #c50502;
           background-color: #f9fafb;
           border-left: 4px solid #c50502;
+        }
+        
+        .text-primary {
+          color: #c50502;
+        }
+        
+        .bg-primary {
+          background-color: #c50502;
+        }
+        
+        .hover\\:bg-primary-dark:hover {
+          background-color: #9c0401;
+        }
+        
+        .focus\\:ring-primary:focus {
+          --tw-ring-color: #c50502;
         }
       `}</style>
     </div>
