@@ -16,6 +16,8 @@ export default function ClientList() {
     async function fetchClients() {
       setIsLoading(true);
       try {
+        console.log('クライアントデータ取得開始...');
+        
         // フィルタリングパラメータを構築
         const params = new URLSearchParams();
         if (filter.status) params.append('status', filter.status);
@@ -24,16 +26,22 @@ export default function ClientList() {
         const queryString = params.toString() ? `?${params.toString()}` : '';
         const response = await fetch(`/api/clients${queryString}`);
         
+        console.log('APIレスポンスステータス:', response.status);
+        
         if (!response.ok) {
-          throw new Error('クライアント情報の取得に失敗しました');
+          const errorText = await response.text();
+          console.error('API エラーレスポンス:', errorText);
+          throw new Error(`クライアント情報の取得に失敗しました (${response.status}): ${errorText}`);
         }
         
         const data = await response.json();
+        console.log(`クライアントデータ取得成功: ${data.clients?.length || 0}件`);
+        
         setClients(data.clients || []);
         setError(null);
       } catch (err) {
         console.error('クライアント取得エラー:', err);
-        setError('クライアント情報の読み込みに失敗しました');
+        setError('クライアント情報の読み込みに失敗しました: ' + err.message);
         setClients([]);
       } finally {
         setIsLoading(false);
@@ -58,6 +66,16 @@ export default function ClientList() {
       status: e.target.value
     });
   };
+
+  // テスト用のダミーデータ（API接続できない場合に表示）
+  const dummyData = [
+    { クライアントID: 'C123', お名前: 'テスト太郎', 'お名前　（カナ）': 'テストタロウ', ステータス: '問合せ', メールアドレス: 'test@example.com', 希望セッション形式: 'オンライン' },
+    { クライアントID: 'C456', お名前: 'サンプル花子', 'お名前　（カナ）': 'サンプルハナコ', ステータス: 'トライアル予約済', メールアドレス: 'sample@example.com', 希望セッション形式: '対面' }
+  ];
+
+  // エラー時にダミーデータを使用するかどうか
+  const useTestData = error && process.env.NODE_ENV === 'development';
+  const displayClients = useTestData ? dummyData : clients;
 
   return (
     <div className="space-y-4">
@@ -97,7 +115,7 @@ export default function ClientList() {
         <div className="flex items-end">
           <Link
             href="/clients/new"
-            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
+            className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-[#c50502] hover:bg-[#a00401]"
           >
             新規クライアント
           </Link>
@@ -107,7 +125,9 @@ export default function ClientList() {
       {/* エラーメッセージ */}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
-          {error}
+          <h3 className="font-bold mb-1">エラーが発生しました</h3>
+          <p>{error}</p>
+          {useTestData && <p className="mt-2 text-sm">※開発モードのため、テストデータを表示します</p>}
         </div>
       )}
 
@@ -115,11 +135,12 @@ export default function ClientList() {
       {isLoading ? (
         <div className="text-center py-8">
           <div className="spinner"></div>
+          <p className="mt-2 text-gray-600">読み込み中...</p>
         </div>
       ) : (
         <>
           {/* クライアント一覧テーブル */}
-          {clients.length > 0 ? (
+          {displayClients.length > 0 ? (
             <div className="overflow-x-auto bg-white rounded-lg shadow">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -142,7 +163,7 @@ export default function ClientList() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {clients.map((client) => (
+                  {displayClients.map((client) => (
                     <tr key={client.クライアントID} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-medium text-gray-900">{client.お名前}</div>
@@ -160,7 +181,7 @@ export default function ClientList() {
                         {client.希望セッション形式}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <Link href={`/clients/${client.クライアントID}`} className="text-primary-600 hover:text-primary-900">
+                        <Link href={`/clients/${client.クライアントID}`} className="text-[#c50502] hover:text-[#a00401]">
                           詳細
                         </Link>
                       </td>
