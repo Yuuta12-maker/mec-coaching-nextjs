@@ -1,9 +1,35 @@
 import Head from 'next/head';
-import { getSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/router';
+import { useEffect, useState } from 'react';
 import Layout from '../../components/Layout';
 import ClientList from '../../components/clients/ClientList';
 
 export default function ClientsPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // ログインチェック（クライアントサイドでの確認）
+    if (status === 'unauthenticated') {
+      router.push('/auth/signin?callbackUrl=/clients');
+    } else if (status === 'authenticated') {
+      setLoading(false);
+    }
+  }, [status, router]);
+
+  if (loading && status !== 'authenticated') {
+    return (
+      <Layout>
+        <div className="text-center py-8">
+          <div className="spinner"></div>
+          <p className="mt-2 text-gray-600">読み込み中...</p>
+        </div>
+      </Layout>
+    );
+  }
+
   return (
     <Layout>
       <Head>
@@ -20,20 +46,4 @@ export default function ClientsPage() {
   );
 }
 
-// サーバーサイドで認証を確認
-export async function getServerSideProps(context) {
-  const session = await getSession(context);
-  
-  if (!session) {
-    return {
-      redirect: {
-        destination: '/auth/signin?callbackUrl=/clients',
-        permanent: false,
-      },
-    };
-  }
-  
-  return {
-    props: { session }
-  };
-}
+// getServerSidePropsは削除（クライアント側で認証チェックを行う）
