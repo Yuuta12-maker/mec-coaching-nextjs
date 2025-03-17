@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
 
-export default function Layout({ children }) {
+export default function Layout({ children, forceAccess = false }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [bypassAuth, setBypassAuth] = useState(false);
@@ -15,17 +15,19 @@ export default function Layout({ children }) {
     setIsMounted(true);
     
     // 緊急バイパス認証をチェック
-    const hasBypassAuth = localStorage.getItem('mec-bypass-auth') === 'true';
-    setBypassAuth(hasBypassAuth);
-    
-    // 認証されていない場合かつバイパスもない場合はログインページへリダイレクト
-    if (status === 'unauthenticated' && !hasBypassAuth) {
-      // 既にログイン画面またはエラー画面にいる場合はリダイレクトしない
-      if (!router.pathname.startsWith('/auth/')) {
-        router.push('/auth/signin');
+    if (typeof window !== 'undefined') {
+      const hasBypassAuth = localStorage.getItem('mec-bypass-auth') === 'true';
+      setBypassAuth(hasBypassAuth);
+      
+      // 認証されていない場合かつバイパスもない場合はログインページへリダイレクト
+      if (status === 'unauthenticated' && !hasBypassAuth && !forceAccess) {
+        // 既にログイン画面またはエラー画面にいる場合はリダイレクトしない
+        if (!router.pathname.startsWith('/auth/')) {
+          router.push('/auth/signin');
+        }
       }
     }
-  }, [status, router]);
+  }, [status, router, forceAccess]);
   
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
@@ -45,7 +47,7 @@ export default function Layout({ children }) {
   // 認証離脱処理
   const handleSignOut = () => {
     // バイパス認証を使用していた場合はローカルストレージをクリア
-    if (bypassAuth) {
+    if (bypassAuth && typeof window !== 'undefined') {
       localStorage.removeItem('mec-bypass-auth');
       router.push('/auth/signin');
     } else {
@@ -58,14 +60,15 @@ export default function Layout({ children }) {
     return null; // クライアントサイドでレンダリングするまで何も表示しない
   }
   
-  // 認証されておらず、バイパスもない場合は何も表示しない
-  if (status === 'unauthenticated' && !bypassAuth) {
-    // 認証関連ページにいる場合はレイアウトを表示しない
-    if (router.pathname.startsWith('/auth/')) {
-      return <>{children}</>;
-    }
-    return null;
-  }
+  // 緊急対応：認証チェックを一時的に無効にする
+  // // 認証されておらず、バイパスもない場合は何も表示しない
+  // if (status === 'unauthenticated' && !bypassAuth && !forceAccess) {
+  //   // 認証関連ページにいる場合はレイアウトを表示しない
+  //   if (router.pathname.startsWith('/auth/')) {
+  //     return <>{children}</>;
+  //   }
+  //   return null;
+  // }
 
   return (
     <div className="app-container">
@@ -79,19 +82,22 @@ export default function Layout({ children }) {
             >
               <span className="material-icons">menu</span>
             </button>
-            <span className="text-lg font-medium text-primary">マインドエンジニアリング・コーチング</span>
+            <span className="text-lg font-medium text-[#c50502]">マインドエンジニアリング・コーチング</span>
           </div>
           
           <div className="flex items-center">
             {bypassAuth && (
               <span className="mr-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">緊急モード</span>
             )}
+            {forceAccess && !session && (
+              <span className="mr-2 px-2 py-1 bg-red-100 text-red-800 rounded text-xs">一時アクセスモード</span>
+            )}
             <span className="mr-2 hidden sm:block text-sm text-gray-600">
               {session?.user?.name || '管理者'}
             </span>
             <button 
               onClick={handleSignOut}
-              className="text-gray-600 hover:text-primary"
+              className="text-gray-600 hover:text-[#c50502]"
             >
               <span className="material-icons">logout</span>
             </button>
@@ -135,7 +141,7 @@ export default function Layout({ children }) {
           onClick={e => e.stopPropagation()}
         >
           <div className="flex justify-between items-center p-4 border-b">
-            <h2 className="text-primary font-bold">MEC</h2>
+            <h2 className="text-[#c50502] font-bold">MEC</h2>
             <button onClick={toggleMobileMenu} className="text-gray-600">
               <span className="material-icons">close</span>
             </button>
@@ -151,7 +157,7 @@ export default function Layout({ children }) {
               <span>クライアント</span>
             </Link>
             <Link href="/sessions" className={`mobile-nav-link ${isActive('/sessions') ? 'active' : ''}`} onClick={toggleMobileMenu}>
-              <span className="material-icons">session</span>
+              <span className="material-icons">event</span>
               <span>セッション</span>
             </Link>
             <Link href="/payments" className={`mobile-nav-link ${isActive('/payments') ? 'active' : ''}`} onClick={toggleMobileMenu}>
@@ -165,10 +171,11 @@ export default function Layout({ children }) {
               <div className="text-sm text-gray-600">
                 {session?.user?.name || '管理者'}
                 {bypassAuth && <span className="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">緊急モード</span>}
+                {forceAccess && !session && <span className="ml-2 px-2 py-1 bg-red-100 text-red-800 rounded text-xs">一時アクセス</span>}
               </div>
               <button 
                 onClick={handleSignOut}
-                className="text-gray-600 hover:text-primary"
+                className="text-gray-600 hover:text-[#c50502]"
               >
                 <span className="material-icons">logout</span>
               </button>
@@ -224,22 +231,6 @@ export default function Layout({ children }) {
           color: #c50502;
           background-color: #f9fafb;
           border-left: 4px solid #c50502;
-        }
-        
-        .text-primary {
-          color: #c50502;
-        }
-        
-        .bg-primary {
-          background-color: #c50502;
-        }
-        
-        .hover\\:bg-primary-dark:hover {
-          background-color: #9c0401;
-        }
-        
-        .focus\\:ring-primary:focus {
-          --tw-ring-color: #c50502;
         }
       `}</style>
     </div>
