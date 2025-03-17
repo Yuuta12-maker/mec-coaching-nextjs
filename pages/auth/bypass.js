@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
+import Link from 'next/link';
 
 // この画面は開発時の認証問題をバイパスするための一時的なものです
 // 本番環境では適切なセキュリティ対策を行うことが重要です
@@ -71,9 +72,9 @@ export default function AuthBypass() {
         <div className="mt-6 text-sm text-center text-gray-500">
           <p>このページは認証システムに問題がある場合の緊急用です</p>
           <p className="mt-2">
-            <a href="/auth/signin" className="text-primary hover:underline">
+            <Link href="/auth/signin" className="text-primary hover:underline">
               通常のログイン画面に戻る
-            </a>
+            </Link>
           </p>
         </div>
       </div>
