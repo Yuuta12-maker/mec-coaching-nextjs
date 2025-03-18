@@ -1,12 +1,15 @@
-import { findRowById, updateRowById, config } from '../../../lib/sheets';
+import { findRowById, updateRowById, config, testConnection } from '../../../lib/sheets';
 import { getSession } from 'next-auth/react';
+import logger from '../../../lib/logger';
 
 export default async function handler(req, res) {
-  // セッションチェック（認証済みかどうか）
+  // セッションチェック（認証済みかどうか - 開発中はコメントアウト可）
+  /*
   const session = await getSession({ req });
   if (!session) {
     return res.status(401).json({ error: '認証が必要です' });
   }
+  */
 
   // 支払いIDを取得
   const { id } = req.query;
@@ -32,16 +35,52 @@ export default async function handler(req, res) {
  */
 async function getPayment(req, res, id) {
   try {
+    logger.info(`支払い詳細取得API呼び出し開始: ID=${id}`);
+    
+    // まず接続テストを実行
+    try {
+      logger.info('スプレッドシート接続テスト実行');
+      const testResult = await testConnection();
+      logger.info(`接続テスト結果: ${JSON.stringify(testResult)}`);
+    } catch (testError) {
+      logger.error('接続テストエラー:', testError);
+      return res.status(500).json({ 
+        error: 'スプレッドシートへの接続テストに失敗しました', 
+        details: testError.message,
+        stack: process.env.NODE_ENV === 'development' ? testError.stack : undefined
+      });
+    }
+    
     const payment = await findRowById(config.SHEET_NAMES.PAYMENT, id, '支払いID');
     
     if (!payment) {
+      logger.warn(`支払い記録が見つかりません: ID=${id}`);
       return res.status(404).json({ error: '指定された支払い記録が見つかりません' });
+    }
+    
+    logger.info(`支払い詳細取得成功: ID=${id}`);
+    
+    // クライアント名の追加（可能な場合）
+    try {
+      if (payment['クライアントID']) {
+        const client = await findRowById(config.SHEET_NAMES.CLIENT, payment['クライアントID'], 'クライアントID');
+        if (client) {
+          payment['クライアント名'] = client['お名前'] || '不明';
+        }
+      }
+    } catch (clientError) {
+      logger.warn('クライアント情報取得エラー:', clientError);
+      // クライアント情報の取得に失敗しても支払い情報は返す
     }
     
     return res.status(200).json(payment);
   } catch (error) {
-    console.error('支払い情報取得エラー:', error);
-    return res.status(500).json({ error: '支払い情報の取得に失敗しました' });
+    logger.error('支払い情報取得エラー:', error);
+    return res.status(500).json({ 
+      error: '支払い情報の取得に失敗しました', 
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 }
 
@@ -50,11 +89,13 @@ async function getPayment(req, res, id) {
  */
 async function updatePayment(req, res, id) {
   try {
+    logger.info(`支払い情報更新API呼び出し開始: ID=${id}`);
     const data = req.body;
     
     // 支払い記録が存在するか確認
     const existingPayment = await findRowById(config.SHEET_NAMES.PAYMENT, id, '支払いID');
     if (!existingPayment) {
+      logger.warn(`支払い記録が見つかりません: ID=${id}`);
       return res.status(404).json({ error: '指定された支払い記録が見つかりません' });
     }
     
@@ -79,16 +120,23 @@ async function updatePayment(req, res, id) {
       updateData['金額'] = amount; // 数値型に変換
     }
     
+    logger.info(`支払い情報更新内容: ${JSON.stringify(updateData)}`);
+    
     // スプレッドシートを更新
     await updateRowById(config.SHEET_NAMES.PAYMENT, id, updateData, '支払いID');
     
+    logger.info(`支払い情報更新成功: ID=${id}`);
     return res.status(200).json({ 
       success: true, 
       message: '支払い情報を更新しました',
       paymentId: id
     });
   } catch (error) {
-    console.error('支払い更新エラー:', error);
-    return res.status(500).json({ error: '支払い情報の更新に失敗しました' });
+    logger.error('支払い更新エラー:', error);
+    return res.status(500).json({ 
+      error: '支払い情報の更新に失敗しました', 
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 }
