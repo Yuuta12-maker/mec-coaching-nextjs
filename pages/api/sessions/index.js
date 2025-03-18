@@ -1,4 +1,4 @@
-import { getSheetData, config } from '../../../lib/sheets';
+import { getSheetData, config, addRow } from '../../../lib/sheets';
 import { getSession } from 'next-auth/react';
 import logger from '../../../lib/logger';
 
