@@ -172,19 +172,36 @@ export default function PaymentsList() {
     return statusMatch && searchMatch;
   });
 
-  // 支払い合計を計算
-  const totalAmount = filteredPayments.reduce((sum, payment) => {
-    return sum + (parseInt(payment.金額, 10) || 0);
+  // 全支払いデータから計算（フィルターなし）
+  const allPayments = payments; // フィルター適用前の全データ
+
+  // 全支払い合計
+  const totalAmount = allPayments.reduce((sum, payment) => {
+    // 金額が数値でない場合は0として扱う
+    const amount = typeof payment.金額 === 'number' ? payment.金額 : 
+                 (typeof payment.金額 === 'string' ? parseFloat(payment.金額.replace(/[^0-9.-]/g, '')) : 0);
+    return sum + (isNaN(amount) ? 0 : amount);
   }, 0);
   
-  // 支払い済み/未払い合計を計算
-  const paidAmount = filteredPayments
+  // 入金済み合計
+  const paidAmount = allPayments
     .filter(payment => payment.状態 === '入金済み')
     .reduce((sum, payment) => {
-      return sum + (parseInt(payment.金額, 10) || 0);
+      // 金額が数値でない場合は0として扱う
+      const amount = typeof payment.金額 === 'number' ? payment.金額 : 
+                   (typeof payment.金額 === 'string' ? parseFloat(payment.金額.replace(/[^0-9.-]/g, '')) : 0);
+      return sum + (isNaN(amount) ? 0 : amount);
     }, 0);
   
-  const unpaidAmount = totalAmount - paidAmount;
+  // 未払い合計
+  const unpaidAmount = allPayments
+    .filter(payment => payment.状態 === '未入金')
+    .reduce((sum, payment) => {
+      // 金額が数値でない場合は0として扱う
+      const amount = typeof payment.金額 === 'number' ? payment.金額 : 
+                   (typeof payment.金額 === 'string' ? parseFloat(payment.金額.replace(/[^0-9.-]/g, '')) : 0);
+      return sum + (isNaN(amount) ? 0 : amount);
+    }, 0);
 
   return (
     <Layout>
@@ -230,6 +247,9 @@ export default function PaymentsList() {
           <p><strong>Status:</strong> {status}</p>
           <p><strong>認証:</strong> {session ? '認証済み' : '未認証'}</p>
           <p><strong>データ件数:</strong> {payments.length}</p>
+          <p><strong>合計金額:</strong> {formatCurrency(totalAmount)}</p>
+          <p><strong>入金済み金額:</strong> {formatCurrency(paidAmount)}</p>
+          <p><strong>未払い金額:</strong> {formatCurrency(unpaidAmount)}</p>
           {error && (
             <p className="text-red-500 mt-2"><strong>エラー:</strong> {error}</p>
           )}
@@ -253,7 +273,7 @@ export default function PaymentsList() {
         <div className="bg-white rounded-lg shadow p-4">
           <h3 className="text-sm font-medium text-gray-500 mb-1">合計</h3>
           <p className="text-2xl font-bold text-gray-900">{formatCurrency(totalAmount)}</p>
-          <p className="text-sm text-gray-500">全{filteredPayments.length}件</p>
+          <p className="text-sm text-gray-500">全{allPayments.length}件</p>
         </div>
         
         {/* 支払い済み */}
@@ -261,7 +281,7 @@ export default function PaymentsList() {
           <h3 className="text-sm font-medium text-gray-500 mb-1">支払い済み</h3>
           <p className="text-2xl font-bold text-green-600">{formatCurrency(paidAmount)}</p>
           <p className="text-sm text-gray-500">
-            {filteredPayments.filter(payment => payment.状態 === '入金済み').length}件
+            {allPayments.filter(payment => payment.状態 === '入金済み').length}件
           </p>
         </div>
         
@@ -270,7 +290,7 @@ export default function PaymentsList() {
           <h3 className="text-sm font-medium text-gray-500 mb-1">未払い</h3>
           <p className="text-2xl font-bold text-red-600">{formatCurrency(unpaidAmount)}</p>
           <p className="text-sm text-gray-500">
-            {filteredPayments.filter(payment => payment.状態 === '未入金').length}件
+            {allPayments.filter(payment => payment.状態 === '未入金').length}件
           </p>
         </div>
       </div>
