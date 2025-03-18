@@ -25,6 +25,36 @@ export default async function handler(req, res) {
 }
 
 /**
+ * 支払い状態を正規化する関数
+ * @param {string} status - 元の状態文字列
+ * @returns {string} 正規化された状態文字列
+ */
+function normalizePaymentStatus(status) {
+  if (!status) return '未設定';
+  
+  const normalizedStatus = status.toString().trim();
+  
+  // 入金済み系の判定
+  if (normalizedStatus === '入金済' || 
+      normalizedStatus === '入金済み' || 
+      normalizedStatus.includes('入金') || 
+      normalizedStatus.includes('支払済') || 
+      normalizedStatus.includes('支払い済')) {
+    return '入金済み';
+  }
+  
+  // 未入金系の判定
+  if (normalizedStatus === '未入金' || 
+      normalizedStatus.includes('未払') || 
+      normalizedStatus.includes('未収')) {
+    return '未入金';
+  }
+  
+  // その他の状態はそのまま返す
+  return normalizedStatus;
+}
+
+/**
  * 支払い一覧を取得する関数
  */
 async function getPayments(req, res) {
@@ -70,6 +100,14 @@ async function getPayments(req, res) {
       });
     }
     
+    // 支払い状態を正規化
+    payments = payments.map(payment => {
+      return {
+        ...payment,
+        状態: normalizePaymentStatus(payment.状態)
+      };
+    });
+
     // フィルタリング
     const { clientId, status, fromDate, toDate, item } = req.query;
     
@@ -84,7 +122,8 @@ async function getPayments(req, res) {
     // 状態でフィルタリング（未入金/入金済み等）
     if (status) {
       logger.debug(`状態でフィルタリング: ${status}`);
-      filtered = filtered.filter(payment => payment['状態'] === status);
+      const normalizedStatus = normalizePaymentStatus(status);
+      filtered = filtered.filter(payment => payment['状態'] === normalizedStatus);
     }
     
     // 項目でフィルタリング（トライアル/継続等）
@@ -185,6 +224,9 @@ async function createPayment(req, res) {
     // 状態のデフォルト設定
     if (!data['状態']) {
       data['状態'] = '未入金';
+    } else {
+      // 状態を正規化
+      data['状態'] = normalizePaymentStatus(data['状態']);
     }
     
     // 金額のフォーマットチェック
