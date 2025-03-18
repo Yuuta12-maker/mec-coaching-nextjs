@@ -60,6 +60,20 @@ async function getPayment(req, res, id) {
     
     logger.info(`支払い詳細取得成功: ID=${id}`);
     
+    // 金額データの正規化
+    if (payment['金額'] !== undefined) {
+      // 数値に変換を試みる
+      const amount = payment['金額'].toString();
+      const numericAmount = parseFloat(amount.replace(/[^0-9.-]/g, ''));
+      
+      if (!isNaN(numericAmount)) {
+        payment['金額'] = numericAmount;
+      } else {
+        logger.warn(`不正な金額データ: ${payment['金額']}`);
+        payment['金額'] = 0; // デフォルト値として0を設定
+      }
+    }
+    
     // クライアント名の追加（可能な場合）
     try {
       if (payment['クライアントID']) {
@@ -112,11 +126,24 @@ async function updatePayment(req, res, id) {
     }
     
     // 金額のフォーマットチェック（更新する場合）
-    if (updateData['金額']) {
-      const amount = parseInt(updateData['金額']);
+    if (updateData['金額'] !== undefined) {
+      let amount;
+      
+      if (typeof updateData['金額'] === 'number') {
+        amount = updateData['金額'];
+      } else if (typeof updateData['金額'] === 'string') {
+        // 文字列から数値への変換（カンマや記号を除去）
+        const cleanedAmount = updateData['金額'].replace(/[^0-9.-]/g, '');
+        amount = parseFloat(cleanedAmount);
+      } else {
+        amount = NaN;
+      }
+      
       if (isNaN(amount)) {
+        logger.warn(`不正な金額フォーマット: ${updateData['金額']}`);
         return res.status(400).json({ error: '金額は数値で入力してください' });
       }
+      
       updateData['金額'] = amount; // 数値型に変換
     }
     
