@@ -31,6 +31,36 @@ export default async function handler(req, res) {
 }
 
 /**
+ * 支払い状態を正規化する関数
+ * @param {string} status - 元の状態文字列
+ * @returns {string} 正規化された状態文字列
+ */
+function normalizePaymentStatus(status) {
+  if (!status) return '未設定';
+  
+  const normalizedStatus = status.toString().trim();
+  
+  // 入金済み系の判定
+  if (normalizedStatus === '入金済' || 
+      normalizedStatus === '入金済み' || 
+      normalizedStatus.includes('入金') || 
+      normalizedStatus.includes('支払済') || 
+      normalizedStatus.includes('支払い済')) {
+    return '入金済み';
+  }
+  
+  // 未入金系の判定
+  if (normalizedStatus === '未入金' || 
+      normalizedStatus.includes('未払') || 
+      normalizedStatus.includes('未収')) {
+    return '未入金';
+  }
+  
+  // その他の状態はそのまま返す
+  return normalizedStatus;
+}
+
+/**
  * 特定の支払い情報を取得する関数
  */
 async function getPayment(req, res, id) {
@@ -59,6 +89,9 @@ async function getPayment(req, res, id) {
     }
     
     logger.info(`支払い詳細取得成功: ID=${id}`);
+    
+    // 状態を正規化
+    payment['状態'] = normalizePaymentStatus(payment['状態']);
     
     // 金額データの正規化
     if (payment['金額'] !== undefined) {
@@ -104,7 +137,7 @@ async function getPayment(req, res, id) {
 async function updatePayment(req, res, id) {
   try {
     logger.info(`支払い情報更新API呼び出し開始: ID=${id}`);
-    const data = req.body;
+    let data = req.body;
     
     // 支払い記録が存在するか確認
     const existingPayment = await findRowById(config.SHEET_NAMES.PAYMENT, id, '支払いID');
@@ -118,6 +151,11 @@ async function updatePayment(req, res, id) {
     delete updateData['支払いID']; // IDは更新不可
     delete updateData['クライアントID']; // クライアントIDは変更不可
     delete updateData['登録日']; // 登録日は変更不可
+    
+    // 状態の正規化
+    if (updateData['状態']) {
+      updateData['状態'] = normalizePaymentStatus(updateData['状態']);
+    }
     
     // 入金確認の場合の処理
     if (updateData['状態'] === '入金済み' && !updateData['入金日']) {
