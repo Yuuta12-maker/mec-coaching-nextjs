@@ -25,15 +25,28 @@ export default function PaymentsList() {
         setError(null);
         setErrorDetails(null);
         
+        console.log('支払い情報取得を開始');
         const response = await fetch('/api/payments');
+        
+        // レスポンスのステータスコードとヘッダーを確認
+        console.log('レスポンスステータス:', response.status);
+        console.log('レスポンスヘッダー:', response.headers);
+        
+        // レスポンスデータを取得
         const responseData = await response.json();
+        console.log('レスポンスデータ:', responseData);
         
         if (!response.ok) {
           // エラーレスポンスを詳細に解析
           throw new Error(responseData.error || '支払い情報の取得に失敗しました');
         }
         
-        setPayments(responseData);
+        // データがArray型でなければ調整する
+        const paymentsArray = Array.isArray(responseData) ? responseData : [];
+        console.log('支払いデータ件数:', paymentsArray.length);
+        
+        // 支払いデータをセット
+        setPayments(paymentsArray);
       } catch (err) {
         console.error('支払い情報取得エラー:', err);
         setError(err.message);
@@ -116,7 +129,9 @@ export default function PaymentsList() {
           }
           
           const data = await response.json();
-          setPayments(data);
+          // データがArray型でなければ調整する
+          const paymentsArray = Array.isArray(data) ? data : [];
+          setPayments(paymentsArray);
           setError(null);
           setErrorDetails(null);
         } catch (err) {
@@ -215,6 +230,9 @@ export default function PaymentsList() {
           <p><strong>Status:</strong> {status}</p>
           <p><strong>認証:</strong> {session ? '認証済み' : '未認証'}</p>
           <p><strong>データ件数:</strong> {payments.length}</p>
+          {error && (
+            <p className="text-red-500 mt-2"><strong>エラー:</strong> {error}</p>
+          )}
           {errorDetails && (
             <>
               <p className="text-red-500 mt-2"><strong>エラー詳細:</strong></p>
@@ -313,7 +331,7 @@ export default function PaymentsList() {
             <div className="spinner"></div>
             <p className="mt-2 text-gray-500">読み込み中...</p>
           </div>
-        ) : error ? (
+        ) : error && payments.length === 0 ? (
           <div className="text-center py-8">
             <div className="text-red-500 mb-4">
               <p className="text-lg font-semibold">エラーが発生しました</p>
@@ -359,8 +377,8 @@ export default function PaymentsList() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {filteredPayments.map((payment) => (
-                  <tr key={payment.支払いID || payment.id || Math.random().toString()} className="hover:bg-gray-50">
+                {filteredPayments.map((payment, idx) => (
+                  <tr key={payment.支払いID || payment.id || `payment-${idx}`} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(payment.登録日, 'yyyy/MM/dd')}
                     </td>
