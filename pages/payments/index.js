@@ -12,26 +12,39 @@ export default function PaymentsList() {
   const [payments, setPayments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [errorDetails, setErrorDetails] = useState(null);
   const [filter, setFilter] = useState('all'); // 'all', 'paid', 'unpaid'
   const [searchTerm, setSearchTerm] = useState('');
+  const [showDebug, setShowDebug] = useState(false); // デバッグ表示の切り替え
 
   // 支払い情報を取得
   useEffect(() => {
     async function fetchPayments() {
       try {
         setLoading(true);
+        setError(null);
+        setErrorDetails(null);
         
         const response = await fetch('/api/payments');
+        const responseData = await response.json();
         
         if (!response.ok) {
-          throw new Error('支払い情報の取得に失敗しました');
+          // エラーレスポンスを詳細に解析
+          throw new Error(responseData.error || '支払い情報の取得に失敗しました');
         }
         
-        const data = await response.json();
-        setPayments(data);
+        setPayments(responseData);
       } catch (err) {
         console.error('支払い情報取得エラー:', err);
         setError(err.message);
+        
+        // エラーの詳細情報があれば保存
+        if (err.details || err.stack) {
+          setErrorDetails({
+            details: err.details,
+            stack: err.stack
+          });
+        }
       } finally {
         setLoading(false);
       }
@@ -41,6 +54,26 @@ export default function PaymentsList() {
       fetchPayments();
     }
   }, [status]);
+
+  // 接続テスト実行
+  const runConnectionTest = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/debug/test-connection');
+      const data = await response.json();
+      
+      if (response.ok) {
+        alert(`接続テスト成功: ${data.message || '接続OK'}`);
+      } else {
+        alert(`接続テスト失敗: ${data.error || 'エラーが発生しました'}`);
+      }
+    } catch (err) {
+      console.error('接続テストエラー:', err);
+      alert(`接続テストエラー: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // 支払い状態を更新する関数
   const handleUpdateStatus = async (paymentId, newStatus) => {
@@ -54,7 +87,8 @@ export default function PaymentsList() {
       });
       
       if (!response.ok) {
-        throw new Error('支払い状態の更新に失敗しました');
+        const errorData = await response.json();
+        throw new Error(errorData.error || '支払い状態の更新に失敗しました');
       }
       
       // 更新に成功したら、リストを更新
@@ -65,6 +99,42 @@ export default function PaymentsList() {
     } catch (err) {
       console.error('支払い状態更新エラー:', err);
       alert('支払い状態の更新に失敗しました: ' + err.message);
+    }
+  };
+
+  // データを再読み込み
+  const handleRefresh = () => {
+    if (status !== 'loading') {
+      setLoading(true);
+      async function fetchPayments() {
+        try {
+          const response = await fetch('/api/payments');
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || '支払い情報の取得に失敗しました');
+          }
+          
+          const data = await response.json();
+          setPayments(data);
+          setError(null);
+          setErrorDetails(null);
+        } catch (err) {
+          console.error('支払い情報取得エラー:', err);
+          setError(err.message);
+          
+          // エラーの詳細情報があれば保存
+          if (err.details || err.stack) {
+            setErrorDetails({
+              details: err.details,
+              stack: err.stack
+            });
+          }
+        } finally {
+          setLoading(false);
+        }
+      }
+      fetchPayments();
     }
   };
 
@@ -107,10 +177,57 @@ export default function PaymentsList() {
         <title>支払い管理 | マインドエンジニアリング・コーチング</title>
       </Head>
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-800">支払い管理</h1>
-        <p className="text-gray-600">入金状況の確認と支払い記録の管理</p>
+      <div className="mb-6 flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-800">支払い管理</h1>
+          <p className="text-gray-600">入金状況の確認と支払い記録の管理</p>
+        </div>
+        
+        {/* デバッグツール */}
+        <div className="flex space-x-2">
+          <button
+            onClick={handleRefresh}
+            className="px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md text-sm"
+            disabled={loading}
+          >
+            再読み込み
+          </button>
+          <button
+            onClick={runConnectionTest}
+            className="px-3 py-1 bg-green-500 hover:bg-green-600 text-white rounded-md text-sm"
+            disabled={loading}
+          >
+            接続テスト
+          </button>
+          <button
+            onClick={() => setShowDebug(!showDebug)}
+            className="px-3 py-1 bg-purple-500 hover:bg-purple-600 text-white rounded-md text-sm"
+          >
+            {showDebug ? 'デバッグ非表示' : 'デバッグ表示'}
+          </button>
+        </div>
       </div>
+
+      {/* デバッグ情報 */}
+      {showDebug && (
+        <div className="mb-6 p-4 bg-gray-100 rounded-lg text-xs overflow-auto max-h-60">
+          <h3 className="font-bold mb-2">デバッグ情報:</h3>
+          <p><strong>Status:</strong> {status}</p>
+          <p><strong>認証:</strong> {session ? '認証済み' : '未認証'}</p>
+          <p><strong>データ件数:</strong> {payments.length}</p>
+          {errorDetails && (
+            <>
+              <p className="text-red-500 mt-2"><strong>エラー詳細:</strong></p>
+              {errorDetails.details && <p className="text-red-500">{errorDetails.details}</p>}
+              {errorDetails.stack && (
+                <pre className="mt-2 text-xs text-red-500 bg-red-50 p-2 rounded overflow-auto">
+                  {errorDetails.stack}
+                </pre>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {/* 支払い概要 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
@@ -197,8 +314,17 @@ export default function PaymentsList() {
             <p className="mt-2 text-gray-500">読み込み中...</p>
           </div>
         ) : error ? (
-          <div className="text-center py-8 text-red-500">
-            <p>{error}</p>
+          <div className="text-center py-8">
+            <div className="text-red-500 mb-4">
+              <p className="text-lg font-semibold">エラーが発生しました</p>
+              <p>{error}</p>
+            </div>
+            <button
+              onClick={handleRefresh}
+              className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-md"
+            >
+              再読み込み
+            </button>
           </div>
         ) : filteredPayments.length === 0 ? (
           <div className="text-center py-8">
@@ -234,7 +360,7 @@ export default function PaymentsList() {
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredPayments.map((payment) => (
-                  <tr key={payment.支払いID} className="hover:bg-gray-50">
+                  <tr key={payment.支払いID || payment.id || Math.random().toString()} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {formatDate(payment.登録日, 'yyyy/MM/dd')}
                     </td>
@@ -274,12 +400,14 @@ export default function PaymentsList() {
                       {payment.入金日 ? formatDate(payment.入金日, 'yyyy/MM/dd') : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <Link
-                        href={`/payments/${payment.支払いID}`}
-                        className="text-[#c50502] hover:text-[#a00401]"
-                      >
-                        詳細
-                      </Link>
+                      {payment.支払いID && (
+                        <Link
+                          href={`/payments/${payment.支払いID}`}
+                          className="text-[#c50502] hover:text-[#a00401]"
+                        >
+                          詳細
+                        </Link>
+                      )}
                     </td>
                   </tr>
                 ))}
