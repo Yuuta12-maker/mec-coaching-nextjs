@@ -31,6 +31,7 @@ export default function SessionsPage() {
     async function fetchSessions() {
       try {
         setLoading(true);
+        setError(null);
         
         // フィルタリングパラメータの構築
         const params = new URLSearchParams();
@@ -40,8 +41,7 @@ export default function SessionsPage() {
         
         // 月指定がある場合は範囲指定
         if (filter.month) {
-          const year = filter.month.split('-')[0];
-          const month = filter.month.split('-')[1];
+          const [year, month] = filter.month.split('-');
           const startDate = `${filter.month}-01T00:00:00`;
           
           // 月の最終日を計算
@@ -53,19 +53,24 @@ export default function SessionsPage() {
         }
         
         // APIリクエスト
+        console.log('セッション一覧を取得します...');
         const queryString = params.toString() ? `?${params.toString()}` : '';
         const response = await fetch(`/api/sessions${queryString}`);
         
         if (!response.ok) {
-          throw new Error('セッション一覧の取得に失敗しました');
+          const errorData = await response.json();
+          console.error('APIエラーレスポンス:', errorData);
+          throw new Error(errorData.error || errorData.details || 'セッション一覧の取得に失敗しました');
         }
         
         const data = await response.json();
+        console.log(`セッションデータ取得成功: ${data.length}件`);
         setSessions(data);
         
       } catch (err) {
         console.error('セッション一覧取得エラー:', err);
-        setError(err.message);
+        setError(err.message || 'データの取得中にエラーが発生しました');
+        setSessions([]);
       } finally {
         setLoading(false);
       }
@@ -202,7 +207,14 @@ export default function SessionsPage() {
       {/* エラーメッセージ */}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+          <h3 className="font-bold">エラーが発生しました</h3>
           <p>{error}</p>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="mt-2 text-sm text-[#c50502] hover:underline"
+          >
+            ページを再読み込み
+          </button>
         </div>
       )}
       
