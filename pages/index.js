@@ -5,10 +5,11 @@ import Link from 'next/link';
 import Layout from '../components/Layout';
 import { getSheetData, config } from '../lib/sheets';
 
-export default function Dashboard({ weeklySessionsData, clientStatusData }) {
+export default function Dashboard({ weeklySessionsData, clientStatusData, clientsData }) {
   const { data: session } = useSession();
   const [weeklySessions, setWeeklySessions] = useState([]);
   const [clientStatus, setClientStatus] = useState({});
+  const [clients, setClients] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
@@ -20,8 +21,12 @@ export default function Dashboard({ weeklySessionsData, clientStatusData }) {
       setClientStatus(clientStatusData);
     }
     
+    if (clientsData) {
+      setClients(clientsData);
+    }
+    
     setIsLoading(false);
-  }, [weeklySessionsData, clientStatusData]);
+  }, [weeklySessionsData, clientStatusData, clientsData]);
   
   // 今日の日付を取得
   const today = new Date();
@@ -70,6 +75,11 @@ export default function Dashboard({ weeklySessionsData, clientStatusData }) {
     
     // それ以外は日付を表示
     return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' });
+  };
+  
+  // クライアントIDからクライアント情報を取得
+  const getClientInfo = (clientId) => {
+    return clients.find(client => client.クライアントID === clientId) || {};
   };
   
   return (
@@ -170,44 +180,51 @@ export default function Dashboard({ weeklySessionsData, clientStatusData }) {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {weeklySessions.map((session, index) => (
-                          <tr key={index} className="hover:bg-gray-50">
-                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
-                              {formatDate(session.予定日時)}
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
-                              {new Date(session.予定日時).toLocaleTimeString('ja-JP', {hour: '2-digit', minute:'2-digit'})}
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-800">
-                              <div className="flex items-center">
-                                <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary-light text-primary flex items-center justify-center">
-                                  <span className="font-medium">
-                                    {session.クライアント名?.charAt(0) || '?'}
-                                  </span>
+                        {weeklySessions.map((session, index) => {
+                          // クライアント情報を取得
+                          const clientInfo = getClientInfo(session.クライアントID);
+                          const clientName = clientInfo.お名前 || '不明';
+                          const clientInitial = clientName.charAt(0) || '?';
+                          
+                          return (
+                            <tr key={index} className="hover:bg-gray-50">
+                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
+                                {formatDate(session.予定日時)}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
+                                {new Date(session.予定日時).toLocaleTimeString('ja-JP', {hour: '2-digit', minute:'2-digit'})}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-800">
+                                <div className="flex items-center">
+                                  <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary-light text-primary flex items-center justify-center">
+                                    <span className="font-medium">
+                                      {clientInitial}
+                                    </span>
+                                  </div>
+                                  <div className="ml-3">
+                                    {clientName}
+                                  </div>
                                 </div>
-                                <div className="ml-3">
-                                  {session.クライアント名}
-                                </div>
-                              </div>
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-800">
-                              {session.セッション種別}
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm">
-                              <span className={`px-2 py-1 inline-flex text-xs leading-5 font-medium rounded-full ${getStatusColor(session.ステータス)}`}>
-                                {session.ステータス}
-                              </span>
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
-                              <Link 
-                                href={`/sessions/${session.セッションID || 'unknown'}`}
-                                className="text-primary hover:text-primary-dark font-medium"
-                              >
-                                詳細
-                              </Link>
-                            </td>
-                          </tr>
-                        ))}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-800">
+                                {session.セッション種別}
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-sm">
+                                <span className={`px-2 py-1 inline-flex text-xs leading-5 font-medium rounded-full ${getStatusColor(session.ステータス)}`}>
+                                  {session.ステータス}
+                                </span>
+                              </td>
+                              <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
+                                <Link 
+                                  href={`/sessions/${session.セッションID || 'unknown'}`}
+                                  className="text-primary hover:text-primary-dark font-medium"
+                                >
+                                  詳細
+                                </Link>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
@@ -283,6 +300,9 @@ export async function getServerSideProps(context) {
   const session = await getSession(context);
   
   try {
+    // クライアントデータを取得
+    const clients = await getSheetData(config.SHEET_NAMES.CLIENT);
+    
     // 今週のセッションデータを取得（今日から一週間分）
     const allSessions = await getSheetData(config.SHEET_NAMES.SESSION);
     
@@ -313,7 +333,6 @@ export async function getServerSideProps(context) {
     });
     
     // クライアントのステータス分布を取得
-    const clients = await getSheetData(config.SHEET_NAMES.CLIENT);
     const statusCount = {};
     
     clients.forEach(client => {
@@ -325,6 +344,7 @@ export async function getServerSideProps(context) {
       props: {
         weeklySessionsData: weeklySessions,
         clientStatusData: statusCount,
+        clientsData: clients,
       },
     };
     
@@ -335,6 +355,7 @@ export async function getServerSideProps(context) {
       props: {
         weeklySessionsData: [],
         clientStatusData: {},
+        clientsData: [],
         error: 'データの取得中にエラーが発生しました。',
       },
     };
