@@ -71,7 +71,7 @@ export default function ClientList() {
   // テスト用のダミーデータ（API接続できない場合に表示）
   const dummyData = [
     { クライアントID: 'C123', お名前: 'テスト太郎', 'お名前　（カナ）': 'テストタロウ', ステータス: CLIENT_STATUS.INQUIRY, メールアドレス: 'test@example.com', 希望セッション形式: 'オンライン' },
-    { クライアントID: 'C456', お名前: 'サンプル花子', 'お名前　（カナ）': 'サンプルハナコ', ステータス: CLIENT_STATUS.TRIAL_SCHEDULED, メールアドレス: 'sample@example.com', 希望セッション形式: '対面' }
+    { クライアントID: 'C456', お名前: 'サンプル花子', 'お名前　（カナ）': 'サンプルハナコ', ステータス: CLIENT_STATUS.TRIAL_BEFORE, メールアドレス: 'sample@example.com', 希望セッション形式: '対面' }
   ];
 
   // エラー時にダミーデータを使用するかどうか
@@ -107,7 +107,7 @@ export default function ClientList() {
           >
             <option value="">{CLIENT_STATUS.ALL}</option>
             <option value={CLIENT_STATUS.INQUIRY}>{CLIENT_STATUS.INQUIRY}</option>
-            <option value={CLIENT_STATUS.TRIAL_SCHEDULED}>{CLIENT_STATUS.TRIAL_SCHEDULED}</option>
+            <option value={CLIENT_STATUS.TRIAL_BEFORE}>{CLIENT_STATUS.TRIAL_BEFORE}</option>
             <option value={CLIENT_STATUS.TRIAL_COMPLETED}>{CLIENT_STATUS.TRIAL_COMPLETED}</option>
             <option value={CLIENT_STATUS.ONGOING}>{CLIENT_STATUS.ONGOING}</option>
             <option value={CLIENT_STATUS.COMPLETED}>{CLIENT_STATUS.COMPLETED}</option>
