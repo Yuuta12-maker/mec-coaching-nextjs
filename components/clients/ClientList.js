@@ -40,7 +40,30 @@ export default function ClientList() {
         const data = await response.json();
         console.log(`クライアントデータ取得成功: ${data.clients?.length || 0}件`);
         
-        setClients(data.clients || []);
+        // クライアントデータのステータスを最新の定数に合わせて正規化
+        const normalizedClients = (data.clients || []).map(client => {
+          let status = client.ステータス || '';
+          
+          // 古い表記を新しい表記に変換
+          switch (status) {
+            case '問合せ':
+              status = CLIENT_STATUS.INQUIRY;
+              break;
+            case 'トライアル予約済':
+              status = CLIENT_STATUS.TRIAL_BEFORE;
+              break;
+            case '継続中':
+              status = CLIENT_STATUS.ONGOING;
+              break;
+          }
+          
+          return {
+            ...client,
+            ステータス: status
+          };
+        });
+        
+        setClients(normalizedClients);
         setError(null);
       } catch (err) {
         console.error('クライアント取得エラー:', err);
@@ -113,6 +136,7 @@ export default function ClientList() {
             <option value={CLIENT_STATUS.TRIAL_AFTER}>{CLIENT_STATUS.TRIAL_AFTER}</option>
             <option value={CLIENT_STATUS.ONGOING}>{CLIENT_STATUS.ONGOING}</option>
             <option value={CLIENT_STATUS.COMPLETED}>{CLIENT_STATUS.COMPLETED}</option>
+            <option value={CLIENT_STATUS.SUSPENDED}>{CLIENT_STATUS.SUSPENDED}</option>
           </select>
         </div>
         <div className="flex items-end">
