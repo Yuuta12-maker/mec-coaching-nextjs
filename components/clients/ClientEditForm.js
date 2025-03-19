@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { CLIENT_STATUS, GENDER, SESSION_FORMAT } from '../../lib/constants';
 
 // クライアント編集フォームコンポーネント
 export default function ClientEditForm({ client, onSave, onCancel, loading }) {
@@ -28,7 +29,7 @@ export default function ClientEditForm({ client, onSave, onCancel, loading }) {
     if (client) {
       // 日付フォーマットの調整（YYYY-MM-DD形式に）
       let birthDate = client.生年月日 || '';
-      if (birthDate && !birthDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
+      if (birthDate && !birthDate.match(/^\\d{4}-\\d{2}-\\d{2}$/)) {
         // 様々な日付形式に対応
         try {
           const date = new Date(birthDate);
@@ -115,7 +116,7 @@ export default function ClientEditForm({ client, onSave, onCancel, loading }) {
               {...register('メールアドレス', {
                 required: 'メールアドレスは必須です',
                 pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$/i,
                   message: '有効なメールアドレスを入力してください',
                 },
               })}
@@ -170,10 +171,10 @@ export default function ClientEditForm({ client, onSave, onCancel, loading }) {
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#c50502] focus:ring-[#c50502]"
             >
               <option value="">選択してください</option>
-              <option value="男性">男性</option>
-              <option value="女性">女性</option>
-              <option value="その他">その他</option>
-              <option value="回答しない">回答しない</option>
+              <option value={GENDER.MALE}>{GENDER.MALE}</option>
+              <option value={GENDER.FEMALE}>{GENDER.FEMALE}</option>
+              <option value={GENDER.OTHER}>{GENDER.OTHER}</option>
+              <option value={GENDER.NO_ANSWER}>{GENDER.NO_ANSWER}</option>
             </select>
           </div>
         </div>
@@ -227,11 +228,11 @@ export default function ClientEditForm({ client, onSave, onCancel, loading }) {
               }`}
             >
               <option value="">選択してください</option>
-              <option value="問合せ">問合せ</option>
-              <option value="トライアル予約済">トライアル予約済</option>
-              <option value="トライアル実施済">トライアル実施済</option>
-              <option value="継続中">継続中</option>
-              <option value="完了">完了</option>
+              <option value={CLIENT_STATUS.INQUIRY}>{CLIENT_STATUS.INQUIRY}</option>
+              <option value={CLIENT_STATUS.TRIAL_SCHEDULED}>{CLIENT_STATUS.TRIAL_SCHEDULED}</option>
+              <option value={CLIENT_STATUS.TRIAL_COMPLETED}>{CLIENT_STATUS.TRIAL_COMPLETED}</option>
+              <option value={CLIENT_STATUS.ONGOING}>{CLIENT_STATUS.ONGOING}</option>
+              <option value={CLIENT_STATUS.COMPLETED}>{CLIENT_STATUS.COMPLETED}</option>
             </select>
             {errors.ステータス && (
               <p className="mt-1 text-sm text-red-600">{errors.ステータス.message}</p>
@@ -252,9 +253,9 @@ export default function ClientEditForm({ client, onSave, onCancel, loading }) {
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#c50502] focus:ring-[#c50502]"
             >
               <option value="">選択してください</option>
-              <option value="オンライン">オンライン</option>
-              <option value="対面">対面</option>
-              <option value="どちらでも可">どちらでも可</option>
+              <option value={SESSION_FORMAT.ONLINE}>{SESSION_FORMAT.ONLINE}</option>
+              <option value={SESSION_FORMAT.IN_PERSON}>{SESSION_FORMAT.IN_PERSON}</option>
+              <option value={SESSION_FORMAT.EITHER}>{SESSION_FORMAT.EITHER}</option>
             </select>
           </div>
         </div>
