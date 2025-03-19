@@ -25,6 +25,8 @@ export default function ClientList() {
         if (filter.search) params.append('search', filter.search);
         
         const queryString = params.toString() ? `?${params.toString()}` : '';
+        console.log(`API呼び出しURL: /api/clients${queryString}`); // デバッグ用
+        
         const response = await fetch(`/api/clients${queryString}`);
         
         console.log('APIレスポンスステータス:', response.status);
