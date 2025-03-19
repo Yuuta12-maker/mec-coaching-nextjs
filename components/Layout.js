@@ -74,7 +74,7 @@ export default function Layout({ children, forceAccess = false }) {
     <div className="app-container">
       <div className="min-h-screen flex flex-col bg-gray-50">
         {/* トップバー */}
-        <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+        <header className="bg-white border-b border-gray-200 shadow-md sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               {/* ロゴとハンバーガーメニュー */}
@@ -120,25 +120,37 @@ export default function Layout({ children, forceAccess = false }) {
           </div>
         </header>
         
-        {/* デスクトップナビゲーション（PC用） */}
-        <div className="hidden md:block bg-white border-b border-gray-200 shadow-sm">
+        {/* スタイリッシュなナビゲーションバー（PC用） */}
+        <div className="hidden md:block bg-gradient-to-r from-gray-900 to-gray-800 shadow-lg">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <nav className="flex justify-center">
-              <Link href="/" className={`nav-link ${isActive('/') ? 'active' : ''}`}>
-                <span className="material-icons">dashboard</span>
+              <Link href="/" className={`fancy-nav-link ${isActive('/') ? 'active' : ''}`}>
+                <div className="nav-icon">
+                  <span className="material-icons icon-shadow">dashboard</span>
+                </div>
                 <span>ダッシュボード</span>
+                {isActive('/') && <div className="nav-indicator"></div>}
               </Link>
-              <Link href="/clients" className={`nav-link ${isActive('/clients') ? 'active' : ''}`}>
-                <span className="material-icons">people</span>
+              <Link href="/clients" className={`fancy-nav-link ${isActive('/clients') ? 'active' : ''}`}>
+                <div className="nav-icon">
+                  <span className="material-icons icon-shadow">people</span>
+                </div>
                 <span>クライアント</span>
+                {isActive('/clients') && <div className="nav-indicator"></div>}
               </Link>
-              <Link href="/sessions" className={`nav-link ${isActive('/sessions') ? 'active' : ''}`}>
-                <span className="material-icons">event</span>
+              <Link href="/sessions" className={`fancy-nav-link ${isActive('/sessions') ? 'active' : ''}`}>
+                <div className="nav-icon">
+                  <span className="material-icons icon-shadow">event</span>
+                </div>
                 <span>セッション</span>
+                {isActive('/sessions') && <div className="nav-indicator"></div>}
               </Link>
-              <Link href="/payments" className={`nav-link ${isActive('/payments') ? 'active' : ''}`}>
-                <span className="material-icons">payments</span>
+              <Link href="/payments" className={`fancy-nav-link ${isActive('/payments') ? 'active' : ''}`}>
+                <div className="nav-icon">
+                  <span className="material-icons icon-shadow">payments</span>
+                </div>
                 <span>支払い</span>
+                {isActive('/payments') && <div className="nav-indicator"></div>}
               </Link>
             </nav>
           </div>
@@ -236,40 +248,69 @@ export default function Layout({ children, forceAccess = false }) {
       </div>
       
       <style jsx>{`
-        .nav-link {
+        /* スタイリッシュなナビゲーションリンク */
+        .fancy-nav-link {
           display: flex;
+          flex-direction: column;
           align-items: center;
-          padding: 0.75rem 1.25rem;
-          color: #4b5563;
+          justify-content: center;
+          padding: 0.75rem 2rem;
+          color: #a0aec0;
           font-size: 0.875rem;
           font-weight: 500;
-          transition: all 0.2s;
+          transition: all 0.3s ease;
           position: relative;
+          overflow: hidden;
+          height: 4.5rem;
         }
         
-        .nav-link .material-icons {
-          margin-right: 0.5rem;
-          font-size: 1.25rem;
+        .fancy-nav-link .nav-icon {
+          margin-bottom: 0.25rem;
+          position: relative;
+          transform: translateY(0);
+          transition: transform 0.3s ease;
         }
         
-        .nav-link:hover {
-          color: var(--primary-color);
+        .fancy-nav-link .material-icons {
+          font-size: 1.5rem;
+          transition: all 0.3s ease;
         }
         
-        .nav-link.active {
-          color: var(--primary-color);
+        .icon-shadow {
+          filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.2));
         }
         
-        .nav-link.active::after {
-          content: '';
+        .fancy-nav-link:hover {
+          color: #ffffff;
+        }
+        
+        .fancy-nav-link:hover .nav-icon {
+          transform: translateY(-2px);
+        }
+        
+        .fancy-nav-link:hover .material-icons {
+          filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.4));
+        }
+        
+        .fancy-nav-link.active {
+          color: #ffffff;
+          background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), transparent);
+        }
+        
+        .nav-indicator {
           position: absolute;
           bottom: 0;
-          left: 0;
-          right: 0;
-          height: 2px;
-          background-color: var(--primary-color);
+          left: 50%;
+          width: 50%;
+          height: 3px;
+          background: linear-gradient(to right, #c50502, #ff6b6b);
+          transform: translateX(-50%);
+          border-radius: 2px 2px 0 0;
+          box-shadow: 0 0 8px rgba(197, 5, 2, 0.5);
+          transition: all 0.3s ease;
         }
         
+        /* モバイルナビゲーション */
         .mobile-nav-link {
           display: flex;
           align-items: center;
