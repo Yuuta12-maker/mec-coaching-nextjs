@@ -2,6 +2,7 @@ import { getSheetData, config, testConnection } from '../../../lib/sheets';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]';
 import logger from '../../../lib/logger';
+import { CLIENT_STATUS } from '../../../lib/constants';
 
 export default async function handler(req, res) {
   // リクエストメソッドチェック
@@ -55,7 +56,22 @@ export default async function handler(req, res) {
     // ステータスでフィルタリング
     if (status) {
       logger.debug(`ステータスでフィルタリング: ${status}`);
-      clients = clients.filter(client => client.ステータス === status);
+      
+      // 改善：直接のステータス比較に加えて、クライアントステータス定数との比較も行う
+      clients = clients.filter(client => {
+        // 正規化：clients.ステータスを取得（ないなら空文字）
+        const clientStatus = client.ステータス || '';
+        
+        // 直接比較
+        if (clientStatus === status) return true;
+        
+        // 定数値から検索
+        const isMatchingStatus = Object.values(CLIENT_STATUS).some(
+          statusValue => statusValue === status && statusValue === clientStatus
+        );
+        
+        return isMatchingStatus;
+      });
     }
 
     // 検索キーワードでフィルタリング
