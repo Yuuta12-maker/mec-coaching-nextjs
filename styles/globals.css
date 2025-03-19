@@ -2,24 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;600;700&display=swap');
+
 :root {
   --foreground-rgb: 0, 0, 0;
-  --background-rgb: 255, 255, 255;
+  --background-rgb: 248, 250, 252;
   --primary-color: #c50502;
   --primary-dark: #8e0000;
   --primary-light: #f8d7d7;
+  --primary-ultralight: #fef2f2;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --info-color: #3b82f6;
+  --danger-color: #ef4444;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   color: rgb(var(--foreground-rgb));
   background: rgb(var(--background-rgb));
   font-family: 'Noto Sans JP', sans-serif;
+  line-height: 1.6;
+}
+
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold leading-tight;
+  }
+  
+  h1 {
+    @apply text-2xl md:text-3xl;
+  }
+  
+  h2 {
+    @apply text-xl md:text-2xl;
+  }
+  
+  h3 {
+    @apply text-lg md:text-xl;
+  }
+  
+  a {
+    @apply transition-colors duration-200;
+  }
+  
+  input, select, textarea {
+    @apply focus:ring-primary focus:border-primary;
+  }
 }
 
 @layer components {
+  /* ボタンスタイル */
   .btn {
-    @apply px-4 py-2 rounded font-medium transition-all duration-200 
-           focus:outline-none focus:ring-2 focus:ring-offset-2;
+    @apply px-4 py-2 rounded-md font-medium transition-all duration-200 
+           focus:outline-none focus:ring-2 focus:ring-offset-2 inline-flex items-center justify-center
+           disabled:opacity-50 disabled:cursor-not-allowed shadow-sm;
   }
 
   .btn-primary {
@@ -31,14 +71,51 @@ body {
     @apply border border-gray-300 bg-white text-gray-700 
            hover:bg-gray-50 focus:ring-gray-300;
   }
-
-  .card {
-    @apply bg-white rounded-lg shadow-md p-6 mb-4;
+  
+  .btn-success {
+    @apply bg-green-600 text-white 
+           hover:bg-green-700 focus:ring-green-500;
+  }
+  
+  .btn-danger {
+    @apply bg-red-600 text-white 
+           hover:bg-red-700 focus:ring-red-500;
+  }
+  
+  .btn-sm {
+    @apply px-3 py-1 text-sm;
+  }
+  
+  .btn-lg {
+    @apply px-6 py-3 text-lg;
   }
 
+  /* カードスタイル */
+  .card {
+    @apply bg-white rounded-lg shadow-md p-6 mb-4 border border-gray-100 transition-all duration-200;
+  }
+  
+  .card-interactive {
+    @apply hover:shadow-lg transform hover:-translate-y-1;
+  }
+  
+  .card-header {
+    @apply flex justify-between items-center mb-4 pb-3 border-b border-gray-100;
+  }
+  
+  .card-title {
+    @apply text-lg font-semibold text-gray-800;
+  }
+  
+  .card-footer {
+    @apply mt-4 pt-3 border-t border-gray-100 flex justify-end;
+  }
+
+  /* フォーム要素 */
   .form-input {
     @apply w-full px-3 py-2 border border-gray-300 rounded-md 
-           focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent;
+           focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent
+           disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed;
   }
 
   .form-label {
@@ -48,27 +125,107 @@ body {
   .form-group {
     @apply mb-4;
   }
+  
+  .form-error {
+    @apply mt-1 text-sm text-red-600;
+  }
+  
+  .form-helper {
+    @apply mt-1 text-sm text-gray-500;
+  }
 
+  /* テーブル要素 */
   .table-container {
-    @apply overflow-x-auto;
+    @apply overflow-x-auto rounded-lg shadow border border-gray-100;
   }
 
   .table {
-    @apply min-w-full border-collapse;
+    @apply min-w-full divide-y divide-gray-200 bg-white;
   }
 
+  .table thead {
+    @apply bg-gray-50;
+  }
+  
   .table th {
-    @apply px-4 py-2 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200;
+    @apply px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-200;
   }
 
   .table td {
     @apply px-4 py-3 text-sm text-gray-900 border-b border-gray-200;
   }
+  
+  .table tbody tr {
+    @apply hover:bg-gray-50 transition-colors duration-150;
+  }
+  
+  .table-striped tbody tr:nth-child(odd) {
+    @apply bg-gray-50;
+  }
+  
+  /* バッジ */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-primary {
+    @apply bg-primary-ultralight text-primary;
+  }
+  
+  .badge-success {
+    @apply bg-green-100 text-green-800;
+  }
+  
+  .badge-warning {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+  
+  .badge-info {
+    @apply bg-blue-100 text-blue-800;
+  }
+  
+  .badge-danger {
+    @apply bg-red-100 text-red-800;
+  }
+  
+  /* その他のユーティリティ */
+  .page-header {
+    @apply mb-6;
+  }
+  
+  .page-title {
+    @apply text-2xl font-bold text-gray-800;
+  }
+  
+  .page-description {
+    @apply text-gray-600 mt-1;
+  }
+}
+
+/* スタータス表示 */
+.status-indicator {
+  @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+}
+
+.status-pending {
+  @apply bg-yellow-100 text-yellow-800;
+}
+
+.status-active {
+  @apply bg-green-100 text-green-800;
+}
+
+.status-completed {
+  @apply bg-blue-100 text-blue-800;
+}
+
+.status-cancelled {
+  @apply bg-gray-100 text-gray-800;
 }
 
 /* Loading Spinner */
 .loading {
-  @apply fixed inset-0 flex items-center justify-center bg-white bg-opacity-70 z-50;
+  @apply fixed inset-0 flex items-center justify-center bg-white bg-opacity-80 z-50;
 }
 
 .spinner {
@@ -77,7 +234,54 @@ body {
   animation: spin 1s linear infinite;
 }
 
+.spinner-sm {
+  @apply w-5 h-5 border-2;
+}
+
+/* ページ遷移アニメーション */
+.page-transition-enter {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-transition-enter-active {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms, transform 300ms;
+}
+
+.page-transition-exit {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.page-transition-exit-active {
+  opacity: 0;
+  transform: translateY(-10px);
+  transition: opacity 300ms, transform 300ms;
+}
+
 @keyframes spin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
+}
+
+/* スクロールバーのカスタマイズ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
 }
