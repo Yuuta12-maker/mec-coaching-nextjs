@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getStatusColor } from '../../lib/clients';
+import { CLIENT_STATUS } from '../../lib/constants';
 
 export default function ClientList() {
   const [clients, setClients] = useState([]);
@@ -69,8 +70,8 @@ export default function ClientList() {
 
   // テスト用のダミーデータ（API接続できない場合に表示）
   const dummyData = [
-    { クライアントID: 'C123', お名前: 'テスト太郎', 'お名前　（カナ）': 'テストタロウ', ステータス: '問合せ', メールアドレス: 'test@example.com', 希望セッション形式: 'オンライン' },
-    { クライアントID: 'C456', お名前: 'サンプル花子', 'お名前　（カナ）': 'サンプルハナコ', ステータス: 'トライアル予約済', メールアドレス: 'sample@example.com', 希望セッション形式: '対面' }
+    { クライアントID: 'C123', お名前: 'テスト太郎', 'お名前　（カナ）': 'テストタロウ', ステータス: CLIENT_STATUS.INQUIRY, メールアドレス: 'test@example.com', 希望セッション形式: 'オンライン' },
+    { クライアントID: 'C456', お名前: 'サンプル花子', 'お名前　（カナ）': 'サンプルハナコ', ステータス: CLIENT_STATUS.TRIAL_SCHEDULED, メールアドレス: 'sample@example.com', 希望セッション形式: '対面' }
   ];
 
   // エラー時にダミーデータを使用するかどうか
@@ -104,12 +105,12 @@ export default function ClientList() {
             onChange={handleStatusFilter}
             className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-primary-500 focus:border-primary-500"
           >
-            <option value="">すべて</option>
-            <option value="問合せ">問合せ</option>
-            <option value="トライアル予約済">トライアル予約済</option>
-            <option value="トライアル実施済">トライアル実施済</option>
-            <option value="継続中">継続中</option>
-            <option value="完了">完了</option>
+            <option value="">{CLIENT_STATUS.ALL}</option>
+            <option value={CLIENT_STATUS.INQUIRY}>{CLIENT_STATUS.INQUIRY}</option>
+            <option value={CLIENT_STATUS.TRIAL_SCHEDULED}>{CLIENT_STATUS.TRIAL_SCHEDULED}</option>
+            <option value={CLIENT_STATUS.TRIAL_COMPLETED}>{CLIENT_STATUS.TRIAL_COMPLETED}</option>
+            <option value={CLIENT_STATUS.ONGOING}>{CLIENT_STATUS.ONGOING}</option>
+            <option value={CLIENT_STATUS.COMPLETED}>{CLIENT_STATUS.COMPLETED}</option>
           </select>
         </div>
         <div className="flex items-end">
