@@ -41,6 +41,24 @@ export default function ClientEditForm({ client, onSave, onCancel, loading }) {
         }
       }
 
+      // ステータスの正規化
+      let status = client.ステータス || '';
+      // 古いステータス表記を新しいステータス表記に変換
+      switch (status) {
+        case '問合せ':
+          status = CLIENT_STATUS.INQUIRY;
+          break;
+        case 'トライアル予約済':
+          status = CLIENT_STATUS.TRIAL_BEFORE;
+          break;
+        case 'トライアル実施済':
+          status = CLIENT_STATUS.TRIAL_AFTER;
+          break;
+        case '継続中':
+          status = CLIENT_STATUS.ONGOING;
+          break;
+      }
+
       reset({
         お名前: client.お名前 || '',
         'お名前　（カナ）': client['お名前　（カナ）'] || '',
@@ -49,7 +67,7 @@ export default function ClientEditForm({ client, onSave, onCancel, loading }) {
         性別: client.性別 || '',
         生年月日: birthDate,
         ご住所: client.ご住所 || '',
-        ステータス: client.ステータス || '',
+        ステータス: status,
         希望セッション形式: client.希望セッション形式 || '',
         備考欄: client.備考欄 || '',
       });
@@ -233,6 +251,7 @@ export default function ClientEditForm({ client, onSave, onCancel, loading }) {
               <option value={CLIENT_STATUS.TRIAL_AFTER}>{CLIENT_STATUS.TRIAL_AFTER}</option>
               <option value={CLIENT_STATUS.ONGOING}>{CLIENT_STATUS.ONGOING}</option>
               <option value={CLIENT_STATUS.COMPLETED}>{CLIENT_STATUS.COMPLETED}</option>
+              <option value={CLIENT_STATUS.SUSPENDED}>{CLIENT_STATUS.SUSPENDED}</option>
             </select>
             {errors.ステータス && (
               <p className="mt-1 text-sm text-red-600">{errors.ステータス.message}</p>
