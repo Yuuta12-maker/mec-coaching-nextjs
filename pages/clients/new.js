@@ -38,12 +38,13 @@ export default function NewClientPage() {
     e.preventDefault();
     
     // バリデーション
-    const errors = validateClientData(formData);
-    if (errors) {
-      setFormErrors(errors);
+    const validationErrors = validateClientData(formData);
+    if (validationErrors) {
+      setFormErrors(validationErrors);
       return;
     }
     
+    setFormErrors({});
     setIsSubmitting(true);
     try {
       const response = await fetch('/api/clients/create', {
