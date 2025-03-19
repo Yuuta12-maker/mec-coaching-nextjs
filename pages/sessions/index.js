@@ -5,6 +5,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
 import { formatDate, isToday } from '../../lib/utils';
+import { SESSION_STATUS } from '../../lib/constants';
 
 export default function SessionsPage() {
   const { data: session, status } = useSession();
@@ -65,7 +66,21 @@ export default function SessionsPage() {
         
         const data = await response.json();
         console.log(`セッションデータ取得成功: ${data.length}件`);
-        setSessions(data);
+        
+        // ステータスを正規化
+        const normalizedSessions = data.map(session => {
+          // 古い表記を新しい表記に変換
+          let status = session.ステータス || '';
+          
+          if (status === '実施済み') status = SESSION_STATUS.COMPLETED;
+          
+          return {
+            ...session,
+            ステータス: status
+          };
+        });
+        
+        setSessions(normalizedSessions);
         
       } catch (err) {
         console.error('セッション一覧取得エラー:', err);
@@ -95,12 +110,19 @@ export default function SessionsPage() {
   // セッションステータスに応じた色分け
   const getStatusColor = (status) => {
     switch (status) {
+      case SESSION_STATUS.SCHEDULED:
       case '予定':
         return 'bg-blue-100 text-blue-800';
+      case SESSION_STATUS.COMPLETED:
       case '実施済み':
+      case '実施済':
         return 'bg-green-100 text-green-800';
+      case SESSION_STATUS.CANCELED:
       case 'キャンセル':
         return 'bg-red-100 text-red-800';
+      case SESSION_STATUS.POSTPONED:
+      case '延期':
+        return 'bg-yellow-100 text-yellow-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -196,9 +218,10 @@ export default function SessionsPage() {
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-[#c50502] focus:ring-[#c50502]"
             >
               <option value="">すべて</option>
-              <option value="予定">予定</option>
-              <option value="実施済み">実施済み</option>
-              <option value="キャンセル">キャンセル</option>
+              <option value={SESSION_STATUS.SCHEDULED}>{SESSION_STATUS.SCHEDULED}</option>
+              <option value={SESSION_STATUS.COMPLETED}>{SESSION_STATUS.COMPLETED}</option>
+              <option value={SESSION_STATUS.CANCELED}>{SESSION_STATUS.CANCELED}</option>
+              <option value={SESSION_STATUS.POSTPONED}>{SESSION_STATUS.POSTPONED}</option>
             </select>
           </div>
         </div>
