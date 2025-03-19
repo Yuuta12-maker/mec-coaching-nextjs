@@ -21,6 +21,9 @@
 .dark {
   --foreground-rgb: 255, 255, 255;
   --background-rgb: 15, 23, 42;
+  --primary-color: #ff5a5a; /* 明るい赤に変更 */
+  --primary-dark: #e54444; /* 暗めの赤も調整 */
+  --primary-light: #ff8080; /* 明るいアクセントカラー */
   --primary-ultralight: #3f0f0f;
 }
 
