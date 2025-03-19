@@ -146,7 +146,7 @@ export default function SessionEditForm({ sessionData, clientData, onSave, onCan
               type="url"
               {...register('Google Meet URL', {
                 pattern: {
-                  value: /^https?:\\/\\/.+/i,
+                  value: /^https?:\/\/.+/i,
                   message: '有効なURLを入力してください'
                 }
               })}
