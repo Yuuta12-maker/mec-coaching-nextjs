@@ -87,10 +87,7 @@ export default function Layout({ children, forceAccess = false }) {
                   <span className="material-icons">menu</span>
                 </button>
                 <Link href="/" className="flex items-center">
-                  <div className="mr-2 flex items-center justify-center h-8 w-8 rounded-full bg-primary text-white shadow-lg">
-                    <span className="font-bold">M</span>
-                  </div>
-                  <span className="text-lg font-semibold bg-gradient-to-r from-primary to-primary-dark inline-block text-transparent bg-clip-text hover:text-primary transition-colors">
+                  <span className="text-lg font-semibold text-primary hover:text-primary-dark transition-colors">
                     マインドエンジニアリング・コーチング
                   </span>
                 </Link>
@@ -125,45 +122,25 @@ export default function Layout({ children, forceAccess = false }) {
           </div>
         </header>
         
-        {/* スタイリッシュなナビゲーションバー（PC用） */}
-        <div className="hidden md:block bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 shadow-lg">
-          <div className="max-w-7xl mx-auto">
+        {/* シンプルなナビゲーションバー */}
+        <div className="bg-gray-900 shadow-lg">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <nav className="flex justify-center">
-              <Link href="/" className={`fancy-nav-link ${isActive('/') ? 'active' : ''}`}>
-                <div className="nav-icon-wrapper">
-                  <div className="nav-icon">
-                    <span className="material-icons icon-shadow">dashboard</span>
-                  </div>
-                </div>
-                <span>ダッシュボード</span>
-                {isActive('/') && <div className="nav-indicator"></div>}
+              <Link href="/" className={`main-nav-link ${isActive('/') ? 'active' : ''}`}>
+                <span className="material-icons icon-shadow">dashboard</span>
+                <span className="nav-text">ダッシュボード</span>
               </Link>
-              <Link href="/clients" className={`fancy-nav-link ${isActive('/clients') ? 'active' : ''}`}>
-                <div className="nav-icon-wrapper">
-                  <div className="nav-icon">
-                    <span className="material-icons icon-shadow">people</span>
-                  </div>
-                </div>
-                <span>クライアント</span>
-                {isActive('/clients') && <div className="nav-indicator"></div>}
+              <Link href="/clients" className={`main-nav-link ${isActive('/clients') ? 'active' : ''}`}>
+                <span className="material-icons icon-shadow">people</span>
+                <span className="nav-text">クライアント</span>
               </Link>
-              <Link href="/sessions" className={`fancy-nav-link ${isActive('/sessions') ? 'active' : ''}`}>
-                <div className="nav-icon-wrapper">
-                  <div className="nav-icon">
-                    <span className="material-icons icon-shadow">event</span>
-                  </div>
-                </div>
-                <span>セッション</span>
-                {isActive('/sessions') && <div className="nav-indicator"></div>}
+              <Link href="/sessions" className={`main-nav-link ${isActive('/sessions') ? 'active' : ''}`}>
+                <span className="material-icons icon-shadow">event</span>
+                <span className="nav-text">セッション</span>
               </Link>
-              <Link href="/payments" className={`fancy-nav-link ${isActive('/payments') ? 'active' : ''}`}>
-                <div className="nav-icon-wrapper">
-                  <div className="nav-icon">
-                    <span className="material-icons icon-shadow">payments</span>
-                  </div>
-                </div>
-                <span>支払い</span>
-                {isActive('/payments') && <div className="nav-indicator"></div>}
+              <Link href="/payments" className={`main-nav-link ${isActive('/payments') ? 'active' : ''}`}>
+                <span className="material-icons icon-shadow">payments</span>
+                <span className="nav-text">支払い</span>
               </Link>
             </nav>
           </div>
@@ -194,7 +171,7 @@ export default function Layout({ children, forceAccess = false }) {
         onClick={toggleMobileMenu}
       >
         <div 
-          className={`fixed top-0 left-0 w-72 h-full bg-gradient-to-b from-gray-900 to-gray-800 text-white shadow-xl transform transition-transform duration-300 ease-in-out ${
+          className={`fixed top-0 left-0 w-72 h-full bg-gray-900 text-white shadow-xl transform transition-transform duration-300 ease-in-out ${
             isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
           onClick={e => e.stopPropagation()}
@@ -216,41 +193,21 @@ export default function Layout({ children, forceAccess = false }) {
           </div>
           
           <nav className="flex flex-col py-4">
-            <Link href="/" className={`mobile-fancy-nav-link ${isActive('/') ? 'active' : ''}`} onClick={toggleMobileMenu}>
-              <div className="flex items-center">
-                <div className="mobile-nav-icon">
-                  <span className="material-icons">dashboard</span>
-                </div>
-                <span>ダッシュボード</span>
-              </div>
-              {isActive('/') && <div className="mobile-nav-indicator"></div>}
+            <Link href="/" className={`mobile-nav-link ${isActive('/') ? 'active' : ''}`} onClick={toggleMobileMenu}>
+              <span className="material-icons">dashboard</span>
+              <span>ダッシュボード</span>
             </Link>
-            <Link href="/clients" className={`mobile-fancy-nav-link ${isActive('/clients') ? 'active' : ''}`} onClick={toggleMobileMenu}>
-              <div className="flex items-center">
-                <div className="mobile-nav-icon">
-                  <span className="material-icons">people</span>
-                </div>
-                <span>クライアント</span>
-              </div>
-              {isActive('/clients') && <div className="mobile-nav-indicator"></div>}
+            <Link href="/clients" className={`mobile-nav-link ${isActive('/clients') ? 'active' : ''}`} onClick={toggleMobileMenu}>
+              <span className="material-icons">people</span>
+              <span>クライアント</span>
             </Link>
-            <Link href="/sessions" className={`mobile-fancy-nav-link ${isActive('/sessions') ? 'active' : ''}`} onClick={toggleMobileMenu}>
-              <div className="flex items-center">
-                <div className="mobile-nav-icon">
-                  <span className="material-icons">event</span>
-                </div>
-                <span>セッション</span>
-              </div>
-              {isActive('/sessions') && <div className="mobile-nav-indicator"></div>}
+            <Link href="/sessions" className={`mobile-nav-link ${isActive('/sessions') ? 'active' : ''}`} onClick={toggleMobileMenu}>
+              <span className="material-icons">event</span>
+              <span>セッション</span>
             </Link>
-            <Link href="/payments" className={`mobile-fancy-nav-link ${isActive('/payments') ? 'active' : ''}`} onClick={toggleMobileMenu}>
-              <div className="flex items-center">
-                <div className="mobile-nav-icon">
-                  <span className="material-icons">payments</span>
-                </div>
-                <span>支払い</span>
-              </div>
-              {isActive('/payments') && <div className="mobile-nav-indicator"></div>}
+            <Link href="/payments" className={`mobile-nav-link ${isActive('/payments') ? 'active' : ''}`} onClick={toggleMobileMenu}>
+              <span className="material-icons">payments</span>
+              <span>支払い</span>
             </Link>
           </nav>
           
@@ -281,163 +238,94 @@ export default function Layout({ children, forceAccess = false }) {
       </div>
       
       <style jsx>{`
-        /* スタイリッシュなナビゲーションリンク */
-        .fancy-nav-link {
+        /* メインナビゲーションリンク - シンプルで安定したデザイン */
+        .main-nav-link {
           display: flex;
-          flex-direction: column;
           align-items: center;
-          justify-content: center;
-          padding: 0.75rem 2.5rem;
-          color: #a0aec0;
-          font-size: 0.875rem;
+          padding: 0.75rem 1.5rem;
+          color: #ffffff;
+          font-size: 0.9rem;
           font-weight: 500;
-          transition: all 0.3s ease;
+          transition: all 0.2s ease;
           position: relative;
-          overflow: hidden;
-          height: 4.5rem;
+          height: 3.5rem;
         }
         
-        .nav-icon-wrapper {
-          position: relative;
-          height: 2rem;
-          width: 2rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          margin-bottom: 0.25rem;
-        }
-        
-        .nav-icon {
-          position: relative;
-          transform: translateY(0);
-          transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
-        }
-        
-        .fancy-nav-link .material-icons {
+        .main-nav-link .material-icons {
           font-size: 1.5rem;
-          transition: all 0.3s ease;
+          margin-right: 0.75rem;
+          transition: color 0.2s ease;
         }
         
         .icon-shadow {
-          filter: drop-shadow(0 0 3px rgba(255, 255, 255, 0.3));
+          filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.2));
         }
         
-        .fancy-nav-link:before {
+        .main-nav-link:hover {
+          background-color: rgba(255, 255, 255, 0.1);
+        }
+        
+        .main-nav-link.active {
+          position: relative;
+          background-color: rgba(255, 255, 255, 0.15);
+        }
+        
+        .main-nav-link.active::after {
           content: '';
           position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          height: 0;
-          background: linear-gradient(to bottom, rgba(255, 255, 255, 0.1), transparent);
-          transition: height 0.3s ease;
-        }
-        
-        .fancy-nav-link:hover {
-          color: #ffffff;
-        }
-        
-        .fancy-nav-link:hover:before {
-          height: 100%;
-        }
-        
-        .fancy-nav-link:hover .nav-icon {
-          transform: translateY(-3px) scale(1.1);
-          filter: drop-shadow(0 4px 4px rgba(0, 0, 0, 0.3));
-        }
-        
-        .fancy-nav-link:hover .material-icons {
-          filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6));
-        }
-        
-        .fancy-nav-link.active {
-          color: #ffffff;
-        }
-        
-        .fancy-nav-link.active:before {
-          height: 100%;
-          background: linear-gradient(to bottom, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
-        }
-        
-        .nav-indicator {
-          position: absolute;
           bottom: 0;
-          left: 20%;
-          width: 60%;
+          left: 10%;
+          width: 80%;
           height: 3px;
-          background: linear-gradient(to right, #c50502, #ff6b6b);
-          transform: translateX(0);
+          background-color: var(--primary-color);
           border-radius: 3px 3px 0 0;
-          box-shadow: 0 0 10px rgba(197, 5, 2, 0.7);
-          transition: all 0.3s ease;
         }
         
         /* モバイルナビゲーション */
-        .mobile-fancy-nav-link {
-          display: block;
-          position: relative;
-          padding: 1rem 1.5rem;
+        .mobile-nav-link {
+          display: flex;
+          align-items: center;
+          padding: 0.875rem 1.5rem;
           color: #e2e8f0;
           font-size: 1rem;
           font-weight: 500;
-          transition: all 0.2s;
-          margin: 0.5rem;
+          transition: background-color 0.2s;
           border-radius: 0.5rem;
-          overflow: hidden;
+          margin: 0.25rem 0.5rem;
         }
         
-        .mobile-nav-icon {
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
+        .mobile-nav-link .material-icons {
           margin-right: 0.75rem;
-          transition: all 0.2s ease;
-        }
-        
-        .mobile-fancy-nav-link .material-icons {
           font-size: 1.25rem;
-          transition: all 0.2s ease;
         }
         
-        .mobile-fancy-nav-link:before {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: linear-gradient(to right, rgba(255, 255, 255, 0.1), transparent);
-          opacity: 0;
-          transition: opacity 0.2s ease;
-          border-radius: 0.5rem;
-        }
-        
-        .mobile-fancy-nav-link:hover:before {
-          opacity: 1;
-        }
-        
-        .mobile-fancy-nav-link:hover {
-          color: #ffffff;
-        }
-        
-        .mobile-fancy-nav-link:hover .material-icons {
-          transform: scale(1.1);
-        }
-        
-        .mobile-fancy-nav-link.active {
+        .mobile-nav-link:hover {
           background-color: rgba(255, 255, 255, 0.1);
           color: #ffffff;
         }
         
-        .mobile-nav-indicator {
-          position: absolute;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 3px;
-          background: linear-gradient(to bottom, #c50502, #ff6b6b);
-          border-radius: 0 3px 3px 0;
-          box-shadow: 0 0 8px rgba(197, 5, 2, 0.5);
+        .mobile-nav-link.active {
+          background-color: rgba(255, 255, 255, 0.15);
+          color: #ffffff;
+          font-weight: 600;
+          border-left: 3px solid var(--primary-color);
+        }
+
+        /* レスポンシブ対応 */
+        @media (max-width: 768px) {
+          .nav-text {
+            display: none;
+          }
+          
+          .main-nav-link {
+            padding: 0.75rem;
+            justify-content: center;
+          }
+          
+          .main-nav-link .material-icons {
+            margin-right: 0;
+            font-size: 1.35rem;
+          }
         }
       `}</style>
     </div>
