@@ -47,7 +47,7 @@ export default function PaymentsList() {
         
         // 各支払いの状態をログ出力（デバッグ用）
         paymentsArray.forEach((payment, index) => {
-          console.log(`支払い[${index}]: ID=${payment.支払いID}, 金額=${payment.金額}, 状態="${payment.状態}", 状態の型=${typeof payment.状態}`);
+          console.log(`支払い[${index}]: ID=${payment.支払いID}, 金額=${payment.金額}, 状態=&quot;${payment.状態}&quot;, 状態の型=${typeof payment.状態}`);
         });
         
         // 支払いデータをセット
@@ -139,7 +139,7 @@ export default function PaymentsList() {
           
           // 各支払いの状態をログ出力（デバッグ用）
           paymentsArray.forEach((payment, index) => {
-            console.log(`支払い[${index}]: ID=${payment.支払いID}, 金額=${payment.金額}, 状態="${payment.状態}", 状態の型=${typeof payment.状態}`);
+            console.log(`支払い[${index}]: ID=${payment.支払いID}, 金額=${payment.金額}, 状態=&quot;${payment.状態}&quot;, 状態の型=${typeof payment.状態}`);
           });
           
           setPayments(paymentsArray);
@@ -192,7 +192,7 @@ export default function PaymentsList() {
     const status = payment.状態?.toString().trim().toLowerCase() || '';
     const isPaid = status === '入金済' || status === '入金済み' || status.includes('入金');
     if (isPaid) {
-      console.log(`入金済みと判定: ID=${payment.支払いID}, 状態="${payment.状態}"`);
+      console.log(`入金済みと判定: ID=${payment.支払いID}, 状態=&quot;${payment.状態}&quot;`);
     }
     return isPaid;
   }).length;
@@ -311,7 +311,7 @@ export default function PaymentsList() {
                 return status === '入金済' || status === '入金済み' || status.includes('入金');
               }).map((payment, idx) => (
                 <li key={idx}>
-                  ID: {payment.支払いID}, 金額: {payment.金額}, 状態: "{payment.状態}"
+                  ID: {payment.支払いID}, 金額: {payment.金額}, 状態: &quot;{payment.状態}&quot;
                 </li>
               ))}
             </ul>
