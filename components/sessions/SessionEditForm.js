@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { SESSION_STATUS, SESSION_TYPE } from '../../lib/constants';
 
 // セッション編集フォームコンポーネント
 export default function SessionEditForm({ sessionData, clientData, onSave, onCancel, loading }) {
@@ -72,13 +73,13 @@ export default function SessionEditForm({ sessionData, clientData, onSave, onCan
               }`}
             >
               <option value="">選択してください</option>
-              <option value="トライアル">トライアル</option>
-              <option value="継続1">継続1</option>
-              <option value="継続2">継続2</option>
-              <option value="継続3">継続3</option>
-              <option value="継続4">継続4</option>
-              <option value="継続5">継続5</option>
-              <option value="カスタム">カスタム</option>
+              <option value={SESSION_TYPE.TRIAL}>{SESSION_TYPE.TRIAL}</option>
+              <option value={SESSION_TYPE.CONTINUATION_1}>{SESSION_TYPE.CONTINUATION_1}</option>
+              <option value={SESSION_TYPE.CONTINUATION_2}>{SESSION_TYPE.CONTINUATION_2}</option>
+              <option value={SESSION_TYPE.CONTINUATION_3}>{SESSION_TYPE.CONTINUATION_3}</option>
+              <option value={SESSION_TYPE.CONTINUATION_4}>{SESSION_TYPE.CONTINUATION_4}</option>
+              <option value={SESSION_TYPE.CONTINUATION_5}>{SESSION_TYPE.CONTINUATION_5}</option>
+              <option value={SESSION_TYPE.CUSTOM}>{SESSION_TYPE.CUSTOM}</option>
             </select>
             {errors.セッション種別 && (
               <p className="mt-1 text-sm text-red-600">{errors.セッション種別.message}</p>
@@ -122,9 +123,10 @@ export default function SessionEditForm({ sessionData, clientData, onSave, onCan
               }`}
             >
               <option value="">選択してください</option>
-              <option value="予定">予定</option>
-              <option value="実施済み">実施済み</option>
-              <option value="キャンセル">キャンセル</option>
+              <option value={SESSION_STATUS.SCHEDULED}>{SESSION_STATUS.SCHEDULED}</option>
+              <option value={SESSION_STATUS.COMPLETED}>{SESSION_STATUS.COMPLETED}</option>
+              <option value={SESSION_STATUS.CANCELED}>{SESSION_STATUS.CANCELED}</option>
+              <option value={SESSION_STATUS.POSTPONED}>{SESSION_STATUS.POSTPONED}</option>
             </select>
             {errors.ステータス && (
               <p className="mt-1 text-sm text-red-600">{errors.ステータス.message}</p>
@@ -144,7 +146,7 @@ export default function SessionEditForm({ sessionData, clientData, onSave, onCan
               type="url"
               {...register('Google Meet URL', {
                 pattern: {
-                  value: /^https?:\/\/.+/i,
+                  value: /^https?:\\/\\/.+/i,
                   message: '有効なURLを入力してください'
                 }
               })}
