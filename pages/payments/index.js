@@ -13,7 +13,7 @@ export default function PaymentsList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [errorDetails, setErrorDetails] = useState(null);
-  const [filter, setFilter] = useState('all'); // 'all', 'paid', 'unpaid'
+  const [filter, setFilter] = useState('all'); // 'all', 'paid', 'unpaid', 'cancelled'
   const [searchTerm, setSearchTerm] = useState('');
   const [showDebug, setShowDebug] = useState(false); // デバッグ表示の切り替え
 
@@ -47,7 +47,7 @@ export default function PaymentsList() {
         
         // 各支払いの状態をログ出力（デバッグ用）
         paymentsArray.forEach((payment, index) => {
-          console.log(`支払い[${index}]: ID=${payment.支払いID}, 金額=${payment.金額}, 状態=&quot;${payment.状態}&quot;, 状態の型=${typeof payment.状態}`);
+          console.log(`支払い[${index}]: ID=${payment.支払いID}, 金額=${payment.金額}, 状態="${payment.状態}", 状態の型=${typeof payment.状態}`);
         });
         
         // 支払いデータをセット
@@ -110,9 +110,24 @@ export default function PaymentsList() {
       }
       
       // 更新に成功したら、リストを更新
-      setPayments(payments.map(payment => 
-        payment.支払いID === paymentId ? { ...payment, 状態: newStatus, 入金日: newStatus === '入金済み' ? new Date().toISOString().split('T')[0] : payment.入金日 } : payment
-      ));
+      setPayments(payments.map(payment => {
+        if (payment.支払いID === paymentId) {
+          const updatedPayment = { ...payment, 状態: newStatus };
+          
+          // 入金済の場合は入金日を設定
+          if (newStatus === '入金済') {
+            updatedPayment.入金日 = new Date().toISOString().split('T')[0];
+          }
+          
+          // キャンセルの場合は入金日をクリア
+          if (newStatus === 'キャンセル') {
+            updatedPayment.入金日 = '';
+          }
+          
+          return updatedPayment;
+        }
+        return payment;
+      }));
       
     } catch (err) {
       console.error('支払い状態更新エラー:', err);
@@ -139,7 +154,7 @@ export default function PaymentsList() {
           
           // 各支払いの状態をログ出力（デバッグ用）
           paymentsArray.forEach((payment, index) => {
-            console.log(`支払い[${index}]: ID=${payment.支払いID}, 金額=${payment.金額}, 状態=&quot;${payment.状態}&quot;, 状態の型=${typeof payment.状態}`);
+            console.log(`支払い[${index}]: ID=${payment.支払いID}, 金額=${payment.金額}, 状態="${payment.状態}", 状態の型=${typeof payment.状態}`);
           });
           
           setPayments(paymentsArray);
@@ -169,8 +184,9 @@ export default function PaymentsList() {
     // 状態フィルター
     const statusMatch = 
       filter === 'all' ? true : 
-      filter === 'paid' ? payment.状態 === '入金済み' : 
+      filter === 'paid' ? payment.状態 === '入金済' : 
       filter === 'unpaid' ? payment.状態 === '未入金' : 
+      filter === 'cancelled' ? payment.状態 === 'キャンセル' :
       true;
     
     // 検索語句
@@ -186,38 +202,24 @@ export default function PaymentsList() {
   // 全支払いデータから計算（フィルターなし）
   const allPayments = payments; // フィルター適用前の全データ
 
-  // 入金済み件数と未入金件数をカウント
-  const paidCount = allPayments.filter(payment => {
-    // 状態の値をトリムして、大文字小文字を区別せずに比較
-    const status = payment.状態?.toString().trim().toLowerCase() || '';
-    const isPaid = status === '入金済' || status === '入金済み' || status.includes('入金');
-    if (isPaid) {
-      console.log(`入金済みと判定: ID=${payment.支払いID}, 状態=&quot;${payment.状態}&quot;`);
-    }
-    return isPaid;
-  }).length;
-  
-  const unpaidCount = allPayments.filter(payment => {
-    // 状態の値をトリムして、大文字小文字を区別せずに比較
-    const status = payment.状態?.toString().trim().toLowerCase() || '';
-    return status === '未入金' || status.includes('未払');
-  }).length;
+  // 入金済み、未入金、キャンセル件数をカウント
+  const paidCount = allPayments.filter(payment => payment.状態 === '入金済').length;
+  const unpaidCount = allPayments.filter(payment => payment.状態 === '未入金').length;
+  const cancelledCount = allPayments.filter(payment => payment.状態 === 'キャンセル').length;
 
-  // 全支払い合計
-  const totalAmount = allPayments.reduce((sum, payment) => {
-    // 金額が数値でない場合は0として扱う
-    const amount = typeof payment.金額 === 'number' ? payment.金額 : 
-                 (typeof payment.金額 === 'string' ? parseFloat(payment.金額.replace(/[^0-9.-]/g, '')) : 0);
-    return sum + (isNaN(amount) ? 0 : amount);
-  }, 0);
+  // 全支払い合計（キャンセルを除く）
+  const totalAmount = allPayments
+    .filter(payment => payment.状態 !== 'キャンセル')
+    .reduce((sum, payment) => {
+      // 金額が数値でない場合は0として扱う
+      const amount = typeof payment.金額 === 'number' ? payment.金額 : 
+                   (typeof payment.金額 === 'string' ? parseFloat(payment.金額.replace(/[^0-9.-]/g, '')) : 0);
+      return sum + (isNaN(amount) ? 0 : amount);
+    }, 0);
   
   // 入金済み合計
   const paidAmount = allPayments
-    .filter(payment => {
-      // 状態の値をトリムして、大文字小文字を区別せずに比較
-      const status = payment.状態?.toString().trim().toLowerCase() || '';
-      return status === '入金済' || status === '入金済み' || status.includes('入金');
-    })
+    .filter(payment => payment.状態 === '入金済')
     .reduce((sum, payment) => {
       // 金額が数値でない場合は0として扱う
       const amount = typeof payment.金額 === 'number' ? payment.金額 : 
@@ -229,11 +231,7 @@ export default function PaymentsList() {
   
   // 未払い合計
   const unpaidAmount = allPayments
-    .filter(payment => {
-      // 状態の値をトリムして、大文字小文字を区別せずに比較
-      const status = payment.状態?.toString().trim().toLowerCase() || '';
-      return status === '未入金' || status.includes('未払');
-    })
+    .filter(payment => payment.状態 === '未入金')
     .reduce((sum, payment) => {
       // 金額が数値でない場合は0として扱う
       const amount = typeof payment.金額 === 'number' ? payment.金額 : 
@@ -250,9 +248,10 @@ export default function PaymentsList() {
       console.log(`未払い金額: ${unpaidAmount}`);
       console.log(`入金済み件数: ${paidCount}`);
       console.log(`未払い件数: ${unpaidCount}`);
+      console.log(`キャンセル件数: ${cancelledCount}`);
       console.log('------------------');
     }
-  }, [payments, totalAmount, paidAmount, unpaidAmount, paidCount, unpaidCount]);
+  }, [payments, totalAmount, paidAmount, unpaidAmount, paidCount, unpaidCount, cancelledCount]);
 
   return (
     <Layout>
@@ -301,17 +300,15 @@ export default function PaymentsList() {
           <p><strong>合計金額:</strong> {formatCurrency(totalAmount)}</p>
           <p><strong>入金済み金額:</strong> {formatCurrency(paidAmount)} ({paidCount}件)</p>
           <p><strong>未払い金額:</strong> {formatCurrency(unpaidAmount)} ({unpaidCount}件)</p>
+          <p><strong>キャンセル件数:</strong> {cancelledCount}件</p>
           
           {/* 入金済みデータの詳細表示 */}
           <div className="mt-2">
             <p><strong>入金済みデータ:</strong></p>
             <ul className="pl-4">
-              {allPayments.filter(payment => {
-                const status = payment.状態?.toString().trim().toLowerCase() || '';
-                return status === '入金済' || status === '入金済み' || status.includes('入金');
-              }).map((payment, idx) => (
+              {allPayments.filter(payment => payment.状態 === '入金済').map((payment, idx) => (
                 <li key={idx}>
-                  ID: {payment.支払いID}, 金額: {payment.金額}, 状態: &quot;{payment.状態}&quot;
+                  ID: {payment.支払いID}, 金額: {payment.金額}, 状態: "{payment.状態}"
                 </li>
               ))}
             </ul>
@@ -343,18 +340,18 @@ export default function PaymentsList() {
           <p className="text-sm text-gray-500">全{allPayments.length}件</p>
         </div>
         
-        {/* 支払い済み */}
+        {/* 入金済 */}
         <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-sm font-medium text-gray-500 mb-1">支払い済み</h3>
+          <h3 className="text-sm font-medium text-gray-500 mb-1">入金済</h3>
           <p className="text-2xl font-bold text-green-600">{formatCurrency(paidAmount)}</p>
           <p className="text-sm text-gray-500">
             {paidCount}件
           </p>
         </div>
         
-        {/* 未払い */}
+        {/* 未入金 */}
         <div className="bg-white rounded-lg shadow p-4">
-          <h3 className="text-sm font-medium text-gray-500 mb-1">未払い</h3>
+          <h3 className="text-sm font-medium text-gray-500 mb-1">未入金</h3>
           <p className="text-2xl font-bold text-red-600">{formatCurrency(unpaidAmount)}</p>
           <p className="text-sm text-gray-500">
             {unpaidCount}件
@@ -377,8 +374,9 @@ export default function PaymentsList() {
               className="rounded-md border-gray-300 shadow-sm focus:border-[#c50502] focus:ring focus:ring-[#c50502] focus:ring-opacity-50"
             >
               <option value="all">すべて</option>
-              <option value="paid">支払い済み</option>
-              <option value="unpaid">未払い</option>
+              <option value="paid">入金済</option>
+              <option value="unpaid">未入金</option>
+              <option value="cancelled">キャンセル</option>
             </select>
           </div>
           
@@ -485,15 +483,27 @@ export default function PaymentsList() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {payment.状態 === '未入金' ? (
-                        <button
-                          onClick={() => handleUpdateStatus(payment.支払いID, '入金済み')}
-                          className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 hover:bg-green-100 hover:text-green-800 transition-colors"
-                        >
-                          未入金 → 入金確認
-                        </button>
-                      ) : payment.状態 === '入金済み' || payment.状態 === '入金済' ? (
+                        <div className="flex space-x-1">
+                          <button
+                            onClick={() => handleUpdateStatus(payment.支払いID, '入金済')}
+                            className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 hover:bg-green-100 hover:text-green-800 transition-colors"
+                          >
+                            未入金 → 入金
+                          </button>
+                          <button
+                            onClick={() => handleUpdateStatus(payment.支払いID, 'キャンセル')}
+                            className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800 hover:bg-gray-200 hover:text-gray-800 transition-colors"
+                          >
+                            キャンセル
+                          </button>
+                        </div>
+                      ) : payment.状態 === '入金済' ? (
                         <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                          入金済み
+                          入金済
+                        </span>
+                      ) : payment.状態 === 'キャンセル' ? (
+                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-200 text-gray-800">
+                          キャンセル
                         </span>
                       ) : (
                         <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-800">
