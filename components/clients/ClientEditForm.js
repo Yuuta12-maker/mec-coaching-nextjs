@@ -29,7 +29,7 @@ export default function ClientEditForm({ client, onSave, onCancel, loading }) {
     if (client) {
       // 日付フォーマットの調整（YYYY-MM-DD形式に）
       let birthDate = client.生年月日 || '';
-      if (birthDate && !birthDate.match(/^\\d{4}-\\d{2}-\\d{2}$/)) {
+      if (birthDate && !birthDate.match(/^\d{4}-\d{2}-\d{2}$/)) {
         // 様々な日付形式に対応
         try {
           const date = new Date(birthDate);
@@ -116,7 +116,7 @@ export default function ClientEditForm({ client, onSave, onCancel, loading }) {
               {...register('メールアドレス', {
                 required: 'メールアドレスは必須です',
                 pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}$/i,
+                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
                   message: '有効なメールアドレスを入力してください',
                 },
               })}
