@@ -1,6 +1,7 @@
 import { getSheetData, config, addRow } from '../../../lib/sheets';
 import { getSession } from 'next-auth/react';
 import logger from '../../../lib/logger';
+import { SESSION_STATUS } from '../../../lib/constants';
 
 export default async function handler(req, res) {
   // セッションチェック（開発環境ではコメントアウト可）
@@ -64,6 +65,27 @@ async function getSessions(req, res) {
       });
     }
     
+    // 旧ステータスから新ステータスへの変換マップ
+    const statusMapping = {
+      '予定': SESSION_STATUS.SCHEDULED,
+      '実施済み': SESSION_STATUS.COMPLETED,
+      '実施済': SESSION_STATUS.COMPLETED,
+      'キャンセル': SESSION_STATUS.CANCELED,
+      '延期': SESSION_STATUS.POSTPONED,
+    };
+
+    // セッションデータのステータスを正規化
+    sessions = sessions.map(session => {
+      const currentStatus = session.ステータス || '';
+      // マッピングに存在すれば変換、なければそのまま
+      const normalizedStatus = statusMapping[currentStatus] || currentStatus;
+      
+      return {
+        ...session,
+        ステータス: normalizedStatus
+      };
+    });
+    
     // フィルタリング
     const { clientId, status, from, to } = req.query;
     
@@ -78,7 +100,11 @@ async function getSessions(req, res) {
     // ステータスでフィルタリング
     if (status) {
       logger.debug(`ステータスでフィルタリング: ${status}`);
-      filtered = filtered.filter(session => session.ステータス === status);
+      
+      filtered = filtered.filter(session => {
+        // 正規化されたステータスで比較
+        return session.ステータス === status;
+      });
     }
     
     // 日付範囲でフィルタリング
@@ -157,7 +183,7 @@ async function createSession(req, res) {
     
     // ステータスの初期設定（予定）
     if (!data.ステータス) {
-      data.ステータス = '予定';
+      data.ステータス = SESSION_STATUS.SCHEDULED;
     }
     
     // 登録日時の設定
