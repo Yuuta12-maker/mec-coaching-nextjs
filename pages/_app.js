@@ -22,7 +22,7 @@ function Auth({ children }) {
   // ローディング中表示
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-100">
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-slate-900">
         <div className="w-12 h-12 border-4 border-t-4 border-gray-200 rounded-full animate-spin" 
              style={{ borderTopColor: '#c50502' }}></div>
       </div>
@@ -47,6 +47,57 @@ function MyApp({ Component, pageProps: { session, ...pageProps } }) {
   
   // 現在のページが認証免除かどうかをチェック
   const isAuthExempt = authExempt.includes(router.pathname);
+  
+  // ダークモード設定を読み込み、適用
+  useEffect(() => {
+    // ブラウザ環境でのみ実行
+    if (typeof window !== 'undefined') {
+      // 保存されたテーマ設定を確認
+      const savedTheme = localStorage.getItem('mec-theme');
+      
+      if (savedTheme === 'dark') {
+        // ダークモードが保存されていれば適用
+        document.documentElement.classList.add('dark');
+      } else if (savedTheme === 'light') {
+        // ライトモードが保存されていれば適用
+        document.documentElement.classList.remove('dark');
+      } else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        // 保存された設定がなければシステム設定を確認
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('mec-theme', 'dark');
+      }
+      
+      // システム設定の変更を監視
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = (e) => {
+        // ユーザーが明示的に設定していない場合のみシステム設定に従う
+        if (!localStorage.getItem('mec-theme')) {
+          if (e.matches) {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
+        }
+      };
+      
+      // 変更イベントのリスナーを追加
+      if (mediaQuery.addEventListener) {
+        mediaQuery.addEventListener('change', handleChange);
+      } else {
+        // 古いブラウザ向けの処理
+        mediaQuery.addListener(handleChange);
+      }
+      
+      // クリーンアップ関数
+      return () => {
+        if (mediaQuery.removeEventListener) {
+          mediaQuery.removeEventListener('change', handleChange);
+        } else {
+          mediaQuery.removeListener(handleChange);
+        }
+      };
+    }
+  }, []);
   
   return (
     <SessionProvider session={session}>
