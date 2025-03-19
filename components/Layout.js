@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
 import { useSession, signOut } from 'next-auth/react';
 import Link from 'next/link';
+import ThemeToggle from './ui/ThemeToggle';
 
 export default function Layout({ children, forceAccess = false }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -72,15 +73,15 @@ export default function Layout({ children, forceAccess = false }) {
 
   return (
     <div className="app-container">
-      <div className="min-h-screen flex flex-col bg-gray-50">
+      <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-slate-900">
         {/* トップバー */}
-        <header className="bg-white border-b border-gray-200 shadow-md sticky top-0 z-10">
+        <header className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-md sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16">
               {/* ロゴとハンバーガーメニュー */}
               <div className="flex items-center">
                 <button 
-                  className="md:hidden mr-3 text-gray-600 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 rounded-md p-1 hover:bg-gray-100 transition-colors" 
+                  className="md:hidden mr-3 text-gray-600 dark:text-gray-400 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50 rounded-md p-1 hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors" 
                   onClick={toggleMobileMenu}
                   aria-label="メニューを開く"
                 >
@@ -96,22 +97,27 @@ export default function Layout({ children, forceAccess = false }) {
               {/* ユーザー情報 */}
               <div className="flex items-center">
                 {bypassAuth && (
-                  <span className="mr-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">緊急モード</span>
+                  <span className="mr-2 px-2 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300 rounded text-xs">緊急モード</span>
                 )}
                 {forceAccess && !session && (
-                  <span className="mr-2 px-2 py-1 bg-red-100 text-red-800 rounded text-xs">一時アクセスモード</span>
+                  <span className="mr-2 px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300 rounded text-xs">一時アクセスモード</span>
                 )}
+                
+                {/* ダークモード切り替えボタン */}
+                <div className="mr-2">
+                  <ThemeToggle />
+                </div>
                 
                 <div className="flex items-center ml-2">
                   <div className="hidden sm:flex items-center justify-center h-8 w-8 rounded-full bg-primary-light text-primary mr-2 shadow-sm">
                     <span className="material-icons text-sm">person</span>
                   </div>
-                  <span className="hidden sm:block text-sm text-gray-700 font-medium mr-3">
+                  <span className="hidden sm:block text-sm text-gray-700 dark:text-gray-300 font-medium mr-3">
                     {session?.user?.name || '管理者'}
                   </span>
                   <button 
                     onClick={handleSignOut}
-                    className="text-gray-600 hover:text-primary transition-colors p-1 rounded-full hover:bg-gray-100"
+                    className="text-gray-600 dark:text-gray-400 hover:text-primary transition-colors p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700"
                     aria-label="ログアウト"
                   >
                     <span className="material-icons">logout</span>
@@ -123,31 +129,31 @@ export default function Layout({ children, forceAccess = false }) {
         </header>
         
         {/* ホワイトベースのナビゲーションバー */}
-        <div className="bg-white border-b border-gray-200 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 shadow-sm">
           <div className="max-w-7xl mx-auto">
             <div className="flex justify-center">
               <Link href="/" className={`nav-item ${isActive('/') ? 'active' : ''}`}>
                 <div className="flex flex-col items-center py-3 px-6">
-                  <span className="material-icons text-gray-700">dashboard</span>
-                  <span className="text-xs mt-2 font-medium text-gray-800">ダッシュボード</span>
+                  <span className="material-icons text-gray-700 dark:text-gray-300">dashboard</span>
+                  <span className="text-xs mt-2 font-medium text-gray-800 dark:text-gray-200">ダッシュボード</span>
                 </div>
               </Link>
               <Link href="/clients" className={`nav-item ${isActive('/clients') ? 'active' : ''}`}>
                 <div className="flex flex-col items-center py-3 px-6">
-                  <span className="material-icons text-gray-700">people</span>
-                  <span className="text-xs mt-2 font-medium text-gray-800">クライアント</span>
+                  <span className="material-icons text-gray-700 dark:text-gray-300">people</span>
+                  <span className="text-xs mt-2 font-medium text-gray-800 dark:text-gray-200">クライアント</span>
                 </div>
               </Link>
               <Link href="/sessions" className={`nav-item ${isActive('/sessions') ? 'active' : ''}`}>
                 <div className="flex flex-col items-center py-3 px-6">
-                  <span className="material-icons text-gray-700">event</span>
-                  <span className="text-xs mt-2 font-medium text-gray-800">セッション</span>
+                  <span className="material-icons text-gray-700 dark:text-gray-300">event</span>
+                  <span className="text-xs mt-2 font-medium text-gray-800 dark:text-gray-200">セッション</span>
                 </div>
               </Link>
               <Link href="/payments" className={`nav-item ${isActive('/payments') ? 'active' : ''}`}>
                 <div className="flex flex-col items-center py-3 px-6">
-                  <span className="material-icons text-gray-700">payments</span>
-                  <span className="text-xs mt-2 font-medium text-gray-800">支払い</span>
+                  <span className="material-icons text-gray-700 dark:text-gray-300">payments</span>
+                  <span className="text-xs mt-2 font-medium text-gray-800 dark:text-gray-200">支払い</span>
                 </div>
               </Link>
             </div>
@@ -162,9 +168,9 @@ export default function Layout({ children, forceAccess = false }) {
         </main>
 
         {/* フッター */}
-        <footer className="bg-white border-t border-gray-200 py-4 mt-8">
+        <footer className="bg-white dark:bg-slate-800 border-t border-gray-200 dark:border-slate-700 py-4 mt-8">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center text-sm text-gray-500">
+            <div className="text-center text-sm text-gray-500 dark:text-gray-400">
               &copy; {new Date().getFullYear()} マインドエンジニアリング・コーチング
             </div>
           </div>
@@ -179,12 +185,12 @@ export default function Layout({ children, forceAccess = false }) {
         onClick={toggleMobileMenu}
       >
         <div 
-          className={`fixed top-0 left-0 w-72 h-full bg-white text-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${
+          className={`fixed top-0 left-0 w-72 h-full bg-white dark:bg-slate-800 text-gray-800 dark:text-gray-200 shadow-xl transform transition-transform duration-300 ease-in-out ${
             isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
           onClick={e => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-slate-700">
             <div className="flex items-center">
               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold">M</span>
@@ -193,7 +199,7 @@ export default function Layout({ children, forceAccess = false }) {
             </div>
             <button 
               onClick={toggleMobileMenu} 
-              className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition-colors"
+              className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-1 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
               aria-label="メニューを閉じる"
             >
               <span className="material-icons">close</span>
@@ -202,44 +208,47 @@ export default function Layout({ children, forceAccess = false }) {
           
           <nav className="flex flex-col py-4">
             <Link href="/" className={`mobile-nav-link ${isActive('/') ? 'active' : ''}`} onClick={toggleMobileMenu}>
-              <span className="material-icons text-gray-700">dashboard</span>
-              <span className="ml-3 text-gray-800">ダッシュボード</span>
+              <span className="material-icons text-gray-700 dark:text-gray-300">dashboard</span>
+              <span className="ml-3 text-gray-800 dark:text-gray-200">ダッシュボード</span>
             </Link>
             <Link href="/clients" className={`mobile-nav-link ${isActive('/clients') ? 'active' : ''}`} onClick={toggleMobileMenu}>
-              <span className="material-icons text-gray-700">people</span>
-              <span className="ml-3 text-gray-800">クライアント</span>
+              <span className="material-icons text-gray-700 dark:text-gray-300">people</span>
+              <span className="ml-3 text-gray-800 dark:text-gray-200">クライアント</span>
             </Link>
             <Link href="/sessions" className={`mobile-nav-link ${isActive('/sessions') ? 'active' : ''}`} onClick={toggleMobileMenu}>
-              <span className="material-icons text-gray-700">event</span>
-              <span className="ml-3 text-gray-800">セッション</span>
+              <span className="material-icons text-gray-700 dark:text-gray-300">event</span>
+              <span className="ml-3 text-gray-800 dark:text-gray-200">セッション</span>
             </Link>
             <Link href="/payments" className={`mobile-nav-link ${isActive('/payments') ? 'active' : ''}`} onClick={toggleMobileMenu}>
-              <span className="material-icons text-gray-700">payments</span>
-              <span className="ml-3 text-gray-800">支払い</span>
+              <span className="material-icons text-gray-700 dark:text-gray-300">payments</span>
+              <span className="ml-3 text-gray-800 dark:text-gray-200">支払い</span>
             </Link>
           </nav>
           
-          <div className="border-t border-gray-200 p-4 mt-auto">
+          <div className="border-t border-gray-200 dark:border-slate-700 p-4 mt-auto">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <div className="h-8 w-8 rounded-full bg-primary-light text-primary flex items-center justify-center mr-2">
                   <span className="material-icons text-sm">person</span>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-gray-800">
+                  <div className="text-sm font-medium text-gray-800 dark:text-gray-200">
                     {session?.user?.name || '管理者'}
                   </div>
-                  {bypassAuth && <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded mt-1 inline-block">緊急モード</span>}
-                  {forceAccess && !session && <span className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded mt-1 inline-block">一時アクセス</span>}
+                  {bypassAuth && <span className="text-xs px-2 py-1 bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-300 rounded mt-1 inline-block">緊急モード</span>}
+                  {forceAccess && !session && <span className="text-xs px-2 py-1 bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-300 rounded mt-1 inline-block">一時アクセス</span>}
                 </div>
               </div>
-              <button 
-                onClick={handleSignOut}
-                className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition-colors"
-                aria-label="ログアウト"
-              >
-                <span className="material-icons">logout</span>
-              </button>
+              <div className="flex items-center">
+                <ThemeToggle />
+                <button 
+                  onClick={handleSignOut}
+                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-1 ml-2 rounded-full hover:bg-gray-100 dark:hover:bg-slate-700 transition-colors"
+                  aria-label="ログアウト"
+                >
+                  <span className="material-icons">logout</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -259,8 +268,16 @@ export default function Layout({ children, forceAccess = false }) {
           background-color: #f3f4f6;
         }
         
+        .dark .nav-item:hover {
+          background-color: #334155;
+        }
+        
         .nav-item.active {
           background-color: #f0f0f0;
+        }
+        
+        .dark .nav-item.active {
+          background-color: #334155;
         }
         
         .nav-item.active:after {
@@ -294,10 +311,18 @@ export default function Layout({ children, forceAccess = false }) {
           background-color: #f3f4f6;
         }
         
+        .dark .mobile-nav-link:hover {
+          background-color: #334155;
+        }
+        
         .mobile-nav-link.active {
           background-color: #f0f0f0;
           font-weight: 600;
           border-left: 3px solid var(--primary-color);
+        }
+        
+        .dark .mobile-nav-link.active {
+          background-color: #334155;
         }
       `}</style>
     </div>
