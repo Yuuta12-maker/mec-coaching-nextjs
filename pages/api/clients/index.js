@@ -53,44 +53,34 @@ export default async function handler(req, res) {
       });
     }
 
-    // ステータスの新旧対応マップ
-    const statusMap = {
-      // 旧ステータス: 新ステータス
+    // 旧ステータスから新ステータスへの変換マップ
+    const statusMapping = {
       '問合せ': CLIENT_STATUS.INQUIRY,
       'トライアル予約済': CLIENT_STATUS.TRIAL_BEFORE,
       'トライアル実施済': CLIENT_STATUS.TRIAL_AFTER,
       'トライアル済': CLIENT_STATUS.TRIAL_AFTER,
       '継続中': CLIENT_STATUS.ONGOING,
-      '完了': CLIENT_STATUS.COMPLETED,
-      '中断': CLIENT_STATUS.SUSPENDED
     };
 
-    // データのステータスを正規化
+    // クライアントデータのステータスを正規化
     clients = clients.map(client => {
-      const originalStatus = client.ステータス || '';
-      // 旧ステータスから新ステータスへのマッピング（該当するものがあれば）
-      client.ステータス = statusMap[originalStatus] || originalStatus;
-      return client;
+      const currentStatus = client.ステータス || '';
+      // マッピングに存在すれば変換、なければそのまま
+      const normalizedStatus = statusMapping[currentStatus] || currentStatus;
+      
+      return {
+        ...client,
+        ステータス: normalizedStatus
+      };
     });
 
     // ステータスでフィルタリング
     if (status) {
       logger.debug(`ステータスでフィルタリング: ${status}`);
       
-      // 古いステータス表記も含めて幅広くマッチングできるように
       clients = clients.filter(client => {
-        // 正規化済みの現在のステータス
-        const clientStatus = client.ステータス || '';
-        
-        // 直接比較
-        if (clientStatus === status) return true;
-        
-        // 旧ステータス名でも検索できるように
-        for (const [oldStatus, newStatus] of Object.entries(statusMap)) {
-          if (newStatus === status && oldStatus === clientStatus) return true;
-        }
-        
-        return false;
+        // 正規化されたステータスで比較
+        return client.ステータス === status;
       });
     }
 
