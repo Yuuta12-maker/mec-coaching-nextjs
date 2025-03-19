@@ -30,17 +30,17 @@ export default async function handler(req, res) {
  * @returns {string} 正規化された状態文字列
  */
 function normalizePaymentStatus(status) {
-  if (!status) return '未設定';
+  if (!status) return '未入金';
   
-  const normalizedStatus = status.toString().trim();
+  const normalizedStatus = status.toString().trim().toLowerCase();
   
-  // 入金済み系の判定
+  // 入金済系の判定
   if (normalizedStatus === '入金済' || 
       normalizedStatus === '入金済み' || 
       normalizedStatus.includes('入金') || 
       normalizedStatus.includes('支払済') || 
       normalizedStatus.includes('支払い済')) {
-    return '入金済み';
+    return '入金済';
   }
   
   // 未入金系の判定
@@ -49,9 +49,16 @@ function normalizePaymentStatus(status) {
       normalizedStatus.includes('未収')) {
     return '未入金';
   }
+
+  // キャンセル系の判定
+  if (normalizedStatus === 'キャンセル' ||
+      normalizedStatus.includes('cancel') ||
+      normalizedStatus.includes('取消')) {
+    return 'キャンセル';
+  }
   
-  // その他の状態はそのまま返す
-  return normalizedStatus;
+  // 上記以外はデフォルトで未入金とする
+  return '未入金';
 }
 
 /**
@@ -119,7 +126,7 @@ async function getPayments(req, res) {
       filtered = filtered.filter(payment => payment['クライアントID'] === clientId);
     }
     
-    // 状態でフィルタリング（未入金/入金済み等）
+    // 状態でフィルタリング（未入金/入金済/キャンセル等）
     if (status) {
       logger.debug(`状態でフィルタリング: ${status}`);
       const normalizedStatus = normalizePaymentStatus(status);
