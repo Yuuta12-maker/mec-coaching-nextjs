@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { formatDate, formatCurrency } from '../../lib/utils';
+import { PAYMENT_STATUS } from '../../lib/constants';
 
 // クライアントの支払い履歴表示コンポーネント
 export default function ClientPayments({ payments, clientId, isLoading }) {
@@ -13,7 +14,7 @@ export default function ClientPayments({ payments, clientId, isLoading }) {
   
   // 支払い済み/未払い合計を計算
   const paidAmount = payments
-    .filter(payment => payment.状態 === '入金済み')
+    .filter(payment => payment.状態 === PAYMENT_STATUS.PAID)
     .reduce((sum, payment) => {
       return sum + (parseInt(payment.金額, 10) || 0);
     }, 0);
@@ -21,8 +22,8 @@ export default function ClientPayments({ payments, clientId, isLoading }) {
   const unpaidAmount = totalAmount - paidAmount;
   
   // 支払い件数
-  const paidCount = payments.filter(payment => payment.状態 === '入金済み').length;
-  const unpaidCount = payments.filter(payment => payment.状態 === '未入金').length;
+  const paidCount = payments.filter(payment => payment.状態 === PAYMENT_STATUS.PAID).length;
+  const unpaidCount = payments.filter(payment => payment.状態 === PAYMENT_STATUS.UNPAID).length;
 
   // 支払いデータがない場合
   if (!payments || payments.length === 0) {
@@ -42,8 +43,8 @@ export default function ClientPayments({ payments, clientId, isLoading }) {
   // フィルター適用
   const filteredPayments = payments.filter(payment => {
     if (filter === 'all') return true;
-    if (filter === 'paid') return payment.状態 === '入金済み';
-    if (filter === 'unpaid') return payment.状態 === '未入金';
+    if (filter === 'paid') return payment.状態 === PAYMENT_STATUS.PAID;
+    if (filter === 'unpaid') return payment.状態 === PAYMENT_STATUS.UNPAID;
     return true;
   });
   
@@ -169,8 +170,9 @@ export default function ClientPayments({ payments, clientId, isLoading }) {
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span
                     className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
-                      ${payment.状態 === '入金済み' ? 'bg-green-100 text-green-800' : 
-                        payment.状態 === '未入金' ? 'bg-yellow-100 text-yellow-800' : 
+                      ${payment.状態 === PAYMENT_STATUS.PAID ? 'bg-green-100 text-green-800' : 
+                        payment.状態 === PAYMENT_STATUS.UNPAID ? 'bg-yellow-100 text-yellow-800' : 
+                          payment.状態 === PAYMENT_STATUS.CANCELED ? 'bg-gray-100 text-gray-800' :
                           'bg-gray-100 text-gray-800'}`}
                   >
                     {payment.状態 || '未設定'}
