@@ -5,15 +5,15 @@ import Link from 'next/link';
 import Layout from '../components/Layout';
 import { getSheetData, config } from '../lib/sheets';
 
-export default function Dashboard({ todaySessionsData, clientStatusData }) {
+export default function Dashboard({ weeklySessionsData, clientStatusData }) {
   const { data: session } = useSession();
-  const [todaySessions, setTodaySessions] = useState([]);
+  const [weeklySessions, setWeeklySessions] = useState([]);
   const [clientStatus, setClientStatus] = useState({});
   const [isLoading, setIsLoading] = useState(true);
   
   useEffect(() => {
-    if (todaySessionsData) {
-      setTodaySessions(todaySessionsData);
+    if (weeklySessionsData) {
+      setWeeklySessions(weeklySessionsData);
     }
     
     if (clientStatusData) {
@@ -21,12 +21,17 @@ export default function Dashboard({ todaySessionsData, clientStatusData }) {
     }
     
     setIsLoading(false);
-  }, [todaySessionsData, clientStatusData]);
+  }, [weeklySessionsData, clientStatusData]);
   
   // 今日の日付を取得
   const today = new Date();
   const dateOptions = { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' };
   const formattedDate = today.toLocaleDateString('ja-JP', dateOptions);
+  
+  // 一週間後の日付
+  const oneWeekLater = new Date(today);
+  oneWeekLater.setDate(today.getDate() + 6); // 今日を含めて7日間
+  const formattedEndDate = oneWeekLater.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', weekday: 'long' });
   
   // ステータスカラーを取得する関数
   const getStatusColor = (status) => {
@@ -40,6 +45,31 @@ export default function Dashboard({ todaySessionsData, clientStatusData }) {
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+  
+  // 日付のフォーマット関数
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    
+    const sessionDate = new Date(date);
+    sessionDate.setHours(0, 0, 0, 0);
+    
+    // 今日の場合は「今日」と表示
+    if (sessionDate.getTime() === now.getTime()) {
+      return '今日';
+    }
+    
+    // 明日の場合は「明日」と表示
+    const tomorrow = new Date(now);
+    tomorrow.setDate(now.getDate() + 1);
+    if (sessionDate.getTime() === tomorrow.getTime()) {
+      return '明日';
+    }
+    
+    // それ以外は日付を表示
+    return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' });
   };
   
   return (
@@ -109,24 +139,29 @@ export default function Dashboard({ todaySessionsData, clientStatusData }) {
           </div>
       
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            {/* 今日のセッション */}
+            {/* 今週のセッション */}
             <div className="md:col-span-8">
               <div className="card h-full">
                 <div className="card-header">
                   <h2 className="card-title flex items-center">
-                    <span className="material-icons mr-2 text-primary">today</span>
-                    今日のセッション
+                    <span className="material-icons mr-2 text-primary">date_range</span>
+                    今週のセッション
                   </h2>
                   <Link href="/sessions" className="text-sm text-primary hover:text-primary-dark flex items-center">
                     すべて表示 <span className="material-icons ml-1 text-sm">arrow_forward</span>
                   </Link>
                 </div>
                 
-                {todaySessions.length > 0 ? (
+                <div className="text-sm text-gray-600 mb-4">
+                  {formattedDate.split('日')[0]}日 〜 {formattedEndDate}
+                </div>
+                
+                {weeklySessions.length > 0 ? (
                   <div className="overflow-hidden rounded-lg border border-gray-100">
                     <table className="min-w-full divide-y divide-gray-200">
                       <thead className="bg-gray-50">
                         <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">日付</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">時間</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">クライアント</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">セッション</th>
@@ -135,8 +170,11 @@ export default function Dashboard({ todaySessionsData, clientStatusData }) {
                         </tr>
                       </thead>
                       <tbody className="bg-white divide-y divide-gray-200">
-                        {todaySessions.map((session, index) => (
+                        {weeklySessions.map((session, index) => (
                           <tr key={index} className="hover:bg-gray-50">
+                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
+                              {formatDate(session.予定日時)}
+                            </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
                               {new Date(session.予定日時).toLocaleTimeString('ja-JP', {hour: '2-digit', minute:'2-digit'})}
                             </td>
@@ -176,7 +214,7 @@ export default function Dashboard({ todaySessionsData, clientStatusData }) {
                 ) : (
                   <div className="flex flex-col items-center justify-center py-8 text-gray-500 bg-gray-50 rounded-lg">
                     <span className="material-icons text-3xl mb-2">event_busy</span>
-                    <p>今日のセッションはありません</p>
+                    <p>今週のセッションはありません</p>
                   </div>
                 )}
               </div>
@@ -245,18 +283,33 @@ export async function getServerSideProps(context) {
   const session = await getSession(context);
   
   try {
-    // 今日のセッションデータを取得
+    // 今週のセッションデータを取得（今日から一週間分）
     const allSessions = await getSheetData(config.SHEET_NAMES.SESSION);
+    
+    // 今日の日付（時間はリセット）
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     
-    const todaysessions = allSessions.filter(session => {
+    // 一週間後の日付
+    const oneWeekLater = new Date(today);
+    oneWeekLater.setDate(today.getDate() + 7); // 今日から7日後
+    
+    // 今週のセッションをフィルタリング（今日以降、一週間後未満）
+    const weeklySessions = allSessions.filter(session => {
       if (!session.予定日時) return false;
       
       const sessionDate = new Date(session.予定日時);
-      sessionDate.setHours(0, 0, 0, 0);
       
-      return sessionDate.getTime() === today.getTime();
+      // 日付の時間をリセットして比較用に準備
+      const sessionDateOnly = new Date(sessionDate);
+      sessionDateOnly.setHours(0, 0, 0, 0);
+      
+      return sessionDateOnly >= today && sessionDateOnly < oneWeekLater;
+    });
+    
+    // 日付順にソート
+    weeklySessions.sort((a, b) => {
+      return new Date(a.予定日時) - new Date(b.予定日時);
     });
     
     // クライアントのステータス分布を取得
@@ -270,7 +323,7 @@ export async function getServerSideProps(context) {
     
     return {
       props: {
-        todaySessionsData: todaysessions,
+        weeklySessionsData: weeklySessions,
         clientStatusData: statusCount,
       },
     };
@@ -280,7 +333,7 @@ export async function getServerSideProps(context) {
     
     return {
       props: {
-        todaySessionsData: [],
+        weeklySessionsData: [],
         clientStatusData: {},
         error: 'データの取得中にエラーが発生しました。',
       },
