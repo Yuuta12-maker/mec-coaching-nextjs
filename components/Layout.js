@@ -122,32 +122,32 @@ export default function Layout({ children, forceAccess = false }) {
           </div>
         </header>
         
-        {/* 完全にシンプル化したナビゲーションバー */}
-        <div className="bg-gray-900 text-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between md:justify-center">
-              <Link href="/" className="simple-nav-link">
-                <div className="flex flex-col items-center py-3">
-                  <span className="material-icons">dashboard</span>
-                  <span className="text-xs mt-1">ダッシュボード</span>
+        {/* ホワイトベースのナビゲーションバー */}
+        <div className="bg-white border-b border-gray-200 shadow-sm">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex justify-center">
+              <Link href="/" className={`nav-item ${isActive('/') ? 'active' : ''}`}>
+                <div className="flex flex-col items-center py-3 px-6">
+                  <span className="material-icons text-gray-700">dashboard</span>
+                  <span className="text-xs mt-2 font-medium text-gray-800">ダッシュボード</span>
                 </div>
               </Link>
-              <Link href="/clients" className="simple-nav-link">
-                <div className="flex flex-col items-center py-3">
-                  <span className="material-icons">people</span>
-                  <span className="text-xs mt-1">クライアント</span>
+              <Link href="/clients" className={`nav-item ${isActive('/clients') ? 'active' : ''}`}>
+                <div className="flex flex-col items-center py-3 px-6">
+                  <span className="material-icons text-gray-700">people</span>
+                  <span className="text-xs mt-2 font-medium text-gray-800">クライアント</span>
                 </div>
               </Link>
-              <Link href="/sessions" className="simple-nav-link">
-                <div className="flex flex-col items-center py-3">
-                  <span className="material-icons">event</span>
-                  <span className="text-xs mt-1">セッション</span>
+              <Link href="/sessions" className={`nav-item ${isActive('/sessions') ? 'active' : ''}`}>
+                <div className="flex flex-col items-center py-3 px-6">
+                  <span className="material-icons text-gray-700">event</span>
+                  <span className="text-xs mt-2 font-medium text-gray-800">セッション</span>
                 </div>
               </Link>
-              <Link href="/payments" className="simple-nav-link">
-                <div className="flex flex-col items-center py-3">
-                  <span className="material-icons">payments</span>
-                  <span className="text-xs mt-1">支払い</span>
+              <Link href="/payments" className={`nav-item ${isActive('/payments') ? 'active' : ''}`}>
+                <div className="flex flex-col items-center py-3 px-6">
+                  <span className="material-icons text-gray-700">payments</span>
+                  <span className="text-xs mt-2 font-medium text-gray-800">支払い</span>
                 </div>
               </Link>
             </div>
@@ -179,21 +179,21 @@ export default function Layout({ children, forceAccess = false }) {
         onClick={toggleMobileMenu}
       >
         <div 
-          className={`fixed top-0 left-0 w-72 h-full bg-gray-900 text-white shadow-xl transform transition-transform duration-300 ease-in-out ${
+          className={`fixed top-0 left-0 w-72 h-full bg-white text-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${
             isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}
           onClick={e => e.stopPropagation()}
         >
-          <div className="flex items-center justify-between p-4 border-b border-gray-700">
+          <div className="flex items-center justify-between p-4 border-b border-gray-200">
             <div className="flex items-center">
               <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center shadow-lg">
                 <span className="text-white font-bold">M</span>
               </div>
-              <h2 className="ml-2 text-white font-semibold">MEC</h2>
+              <h2 className="ml-2 text-primary font-semibold">MEC</h2>
             </div>
             <button 
               onClick={toggleMobileMenu} 
-              className="text-gray-300 hover:text-white p-1 rounded-full hover:bg-gray-700 transition-colors"
+              className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition-colors"
               aria-label="メニューを閉じる"
             >
               <span className="material-icons">close</span>
@@ -202,40 +202,40 @@ export default function Layout({ children, forceAccess = false }) {
           
           <nav className="flex flex-col py-4">
             <Link href="/" className={`mobile-nav-link ${isActive('/') ? 'active' : ''}`} onClick={toggleMobileMenu}>
-              <span className="material-icons">dashboard</span>
-              <span>ダッシュボード</span>
+              <span className="material-icons text-gray-700">dashboard</span>
+              <span className="ml-3 text-gray-800">ダッシュボード</span>
             </Link>
             <Link href="/clients" className={`mobile-nav-link ${isActive('/clients') ? 'active' : ''}`} onClick={toggleMobileMenu}>
-              <span className="material-icons">people</span>
-              <span>クライアント</span>
+              <span className="material-icons text-gray-700">people</span>
+              <span className="ml-3 text-gray-800">クライアント</span>
             </Link>
             <Link href="/sessions" className={`mobile-nav-link ${isActive('/sessions') ? 'active' : ''}`} onClick={toggleMobileMenu}>
-              <span className="material-icons">event</span>
-              <span>セッション</span>
+              <span className="material-icons text-gray-700">event</span>
+              <span className="ml-3 text-gray-800">セッション</span>
             </Link>
             <Link href="/payments" className={`mobile-nav-link ${isActive('/payments') ? 'active' : ''}`} onClick={toggleMobileMenu}>
-              <span className="material-icons">payments</span>
-              <span>支払い</span>
+              <span className="material-icons text-gray-700">payments</span>
+              <span className="ml-3 text-gray-800">支払い</span>
             </Link>
           </nav>
           
-          <div className="border-t border-gray-700 p-4 mt-auto">
+          <div className="border-t border-gray-200 p-4 mt-auto">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                <div className="h-8 w-8 rounded-full bg-gray-700 text-white flex items-center justify-center mr-2">
+                <div className="h-8 w-8 rounded-full bg-primary-light text-primary flex items-center justify-center mr-2">
                   <span className="material-icons text-sm">person</span>
                 </div>
                 <div>
-                  <div className="text-sm font-medium text-white">
+                  <div className="text-sm font-medium text-gray-800">
                     {session?.user?.name || '管理者'}
                   </div>
-                  {bypassAuth && <span className="text-xs px-2 py-1 bg-yellow-600 text-yellow-100 rounded mt-1 inline-block">緊急モード</span>}
-                  {forceAccess && !session && <span className="text-xs px-2 py-1 bg-red-600 text-red-100 rounded mt-1 inline-block">一時アクセス</span>}
+                  {bypassAuth && <span className="text-xs px-2 py-1 bg-yellow-100 text-yellow-800 rounded mt-1 inline-block">緊急モード</span>}
+                  {forceAccess && !session && <span className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded mt-1 inline-block">一時アクセス</span>}
                 </div>
               </div>
               <button 
                 onClick={handleSignOut}
-                className="text-gray-300 hover:text-white p-1 rounded-full hover:bg-gray-700 transition-colors"
+                className="text-gray-500 hover:text-gray-700 p-1 rounded-full hover:bg-gray-100 transition-colors"
                 aria-label="ログアウト"
               >
                 <span className="material-icons">logout</span>
@@ -246,34 +246,35 @@ export default function Layout({ children, forceAccess = false }) {
       </div>
       
       <style jsx>{`
-        /* 超シンプルなナビゲーションリンク */
-        .simple-nav-link {
+        /* ナビゲーションアイテム */
+        .nav-item {
           display: block;
-          color: #f9fafb;
           position: relative;
-          width: 25%;
-          text-align: center;
+          margin: 0 10px;
+          transition: all 0.2s ease;
+          border-radius: 8px;
         }
         
-        .simple-nav-link:hover {
-          background-color: rgba(255, 255, 255, 0.1);
+        .nav-item:hover {
+          background-color: #f3f4f6;
         }
         
-        .simple-nav-link.active {
-          background-color: rgba(255, 255, 255, 0.15);
+        .nav-item.active {
+          background-color: #f0f0f0;
         }
         
-        .simple-nav-link.active::after {
+        .nav-item.active:after {
           content: '';
           position: absolute;
           bottom: 0;
-          left: 25%;
-          width: 50%;
-          height: 2px;
+          left: 20%;
+          width: 60%;
+          height: 3px;
           background-color: var(--primary-color);
+          border-radius: 3px 3px 0 0;
         }
         
-        .simple-nav-link .material-icons {
+        .nav-item .material-icons {
           font-size: 1.5rem;
         }
         
@@ -282,7 +283,6 @@ export default function Layout({ children, forceAccess = false }) {
           display: flex;
           align-items: center;
           padding: 0.875rem 1.5rem;
-          color: #e2e8f0;
           font-size: 1rem;
           font-weight: 500;
           transition: background-color 0.2s;
@@ -290,19 +290,12 @@ export default function Layout({ children, forceAccess = false }) {
           margin: 0.25rem 0.5rem;
         }
         
-        .mobile-nav-link .material-icons {
-          margin-right: 0.75rem;
-          font-size: 1.25rem;
-        }
-        
         .mobile-nav-link:hover {
-          background-color: rgba(255, 255, 255, 0.1);
-          color: #ffffff;
+          background-color: #f3f4f6;
         }
         
         .mobile-nav-link.active {
-          background-color: rgba(255, 255, 255, 0.15);
-          color: #ffffff;
+          background-color: #f0f0f0;
           font-weight: 600;
           border-left: 3px solid var(--primary-color);
         }
