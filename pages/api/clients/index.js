@@ -53,24 +53,44 @@ export default async function handler(req, res) {
       });
     }
 
+    // ステータスの新旧対応マップ
+    const statusMap = {
+      // 旧ステータス: 新ステータス
+      '問合せ': CLIENT_STATUS.INQUIRY,
+      'トライアル予約済': CLIENT_STATUS.TRIAL_BEFORE,
+      'トライアル実施済': CLIENT_STATUS.TRIAL_AFTER,
+      'トライアル済': CLIENT_STATUS.TRIAL_AFTER,
+      '継続中': CLIENT_STATUS.ONGOING,
+      '完了': CLIENT_STATUS.COMPLETED,
+      '中断': CLIENT_STATUS.SUSPENDED
+    };
+
+    // データのステータスを正規化
+    clients = clients.map(client => {
+      const originalStatus = client.ステータス || '';
+      // 旧ステータスから新ステータスへのマッピング（該当するものがあれば）
+      client.ステータス = statusMap[originalStatus] || originalStatus;
+      return client;
+    });
+
     // ステータスでフィルタリング
     if (status) {
       logger.debug(`ステータスでフィルタリング: ${status}`);
       
-      // 改善：直接のステータス比較に加えて、クライアントステータス定数との比較も行う
+      // 古いステータス表記も含めて幅広くマッチングできるように
       clients = clients.filter(client => {
-        // 正規化：clients.ステータスを取得（ないなら空文字）
+        // 正規化済みの現在のステータス
         const clientStatus = client.ステータス || '';
         
         // 直接比較
         if (clientStatus === status) return true;
         
-        // 定数値から検索
-        const isMatchingStatus = Object.values(CLIENT_STATUS).some(
-          statusValue => statusValue === status && statusValue === clientStatus
-        );
+        // 旧ステータス名でも検索できるように
+        for (const [oldStatus, newStatus] of Object.entries(statusMap)) {
+          if (newStatus === status && oldStatus === clientStatus) return true;
+        }
         
-        return isMatchingStatus;
+        return false;
       });
     }
 
