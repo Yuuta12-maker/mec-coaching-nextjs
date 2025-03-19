@@ -80,6 +80,29 @@ export default function PaymentDetail() {
   // フォーム入力の変更を処理
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // 状態が変更された場合、入金日の処理
+    if (name === '状態') {
+      if (value === '入金済') {
+        // 入金済の場合、入金日を今日の日付に設定（既存の入金日があれば保持）
+        const today = new Date().toISOString().split('T')[0];
+        setFormData({ 
+          ...formData, 
+          [name]: value, 
+          入金日: formData.入金日 || today 
+        });
+        return;
+      } else if (value === 'キャンセル') {
+        // キャンセルの場合、入金日をクリア
+        setFormData({ 
+          ...formData, 
+          [name]: value, 
+          入金日: '' 
+        });
+        return;
+      }
+    }
+    
     setFormData({ ...formData, [name]: value });
   };
 
@@ -96,10 +119,15 @@ export default function PaymentDetail() {
         金額: formData.金額 ? parseInt(formData.金額, 10) : formData.金額
       };
       
-      // 状態が入金済みに変更され、入金日が設定されていない場合は今日の日付を設定
-      if (updatedData.状態 === '入金済み' && !updatedData.入金日) {
+      // 状態が入金済に変更され、入金日が設定されていない場合は今日の日付を設定
+      if (updatedData.状態 === '入金済' && !updatedData.入金日) {
         const today = new Date();
         updatedData.入金日 = today.toISOString().split('T')[0]; // YYYY-MM-DD形式
+      }
+      
+      // キャンセル時は入金日をクリア
+      if (updatedData.状態 === 'キャンセル') {
+        updatedData.入金日 = '';
       }
       
       const response = await fetch(`/api/payments/${id}`, {
@@ -142,7 +170,7 @@ export default function PaymentDetail() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          状態: '入金済み',
+          状態: '入金済',
           入金日: today.toISOString().split('T')[0] // YYYY-MM-DD形式
         }),
       });
@@ -155,14 +183,14 @@ export default function PaymentDetail() {
       // 更新成功
       setPayment({
         ...payment,
-        状態: '入金済み',
+        状態: '入金済',
         入金日: today.toISOString().split('T')[0]
       });
       
       // フォームデータも更新
       setFormData({
         ...formData,
-        状態: '入金済み',
+        状態: '入金済',
         入金日: today.toISOString().split('T')[0]
       });
       
@@ -171,6 +199,55 @@ export default function PaymentDetail() {
     } catch (err) {
       console.error('入金確認エラー:', err);
       alert('入金確認に失敗しました: ' + err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // キャンセル処理
+  const handleCancelPayment = async () => {
+    try {
+      if (!confirm('この支払いをキャンセル処理してもよろしいですか？')) {
+        return;
+      }
+      
+      setLoading(true);
+      
+      const response = await fetch(`/api/payments/${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          状態: 'キャンセル',
+          入金日: '' // 入金日をクリア
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'キャンセル処理に失敗しました');
+      }
+
+      // 更新成功
+      setPayment({
+        ...payment,
+        状態: 'キャンセル',
+        入金日: ''
+      });
+      
+      // フォームデータも更新
+      setFormData({
+        ...formData,
+        状態: 'キャンセル',
+        入金日: ''
+      });
+      
+      // 成功メッセージを表示
+      alert('支払いをキャンセルしました');
+    } catch (err) {
+      console.error('キャンセル処理エラー:', err);
+      alert('キャンセル処理に失敗しました: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -203,6 +280,20 @@ export default function PaymentDetail() {
     );
   }
 
+  // 状態に応じた背景色とテキスト色を決定
+  const getStatusStyleClass = (status) => {
+    switch(status) {
+      case '入金済':
+        return 'bg-green-100 text-green-800';
+      case '未入金':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'キャンセル':
+        return 'bg-gray-200 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
     <Layout>
       <Head>
@@ -232,13 +323,22 @@ export default function PaymentDetail() {
         </div>
         <div className="mt-2 md:mt-0 flex gap-2">
           {payment && payment.状態 === '未入金' && !isEditing && (
-            <button
-              onClick={handleConfirmPayment}
-              className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm"
-              disabled={loading}
-            >
-              入金確認
-            </button>
+            <>
+              <button
+                onClick={handleConfirmPayment}
+                className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-md text-sm"
+                disabled={loading}
+              >
+                入金確認
+              </button>
+              <button
+                onClick={handleCancelPayment}
+                className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md text-sm"
+                disabled={loading}
+              >
+                キャンセル
+              </button>
+            </>
           )}
           
           {!isEditing ? (
@@ -280,7 +380,7 @@ export default function PaymentDetail() {
                   required
                 >
                   <option value="">選択してください</option>
-                  <option value="トライアル">トライアル</option>
+                  <option value="トライアルセッション">トライアルセッション</option>
                   <option value="継続セッション">継続セッション</option>
                   <option value="その他">その他</option>
                 </select>
@@ -323,12 +423,13 @@ export default function PaymentDetail() {
                 >
                   <option value="">選択してください</option>
                   <option value="未入金">未入金</option>
-                  <option value="入金済み">入金済み</option>
+                  <option value="入金済">入金済</option>
+                  <option value="キャンセル">キャンセル</option>
                 </select>
               </div>
               
-              {/* 入金日（状態が入金済みの場合のみ表示） */}
-              {formData.状態 === '入金済み' && (
+              {/* 入金日（状態が入金済の場合のみ表示） */}
+              {formData.状態 === '入金済' && (
                 <div>
                   <label htmlFor="入金日" className="block text-sm font-medium text-gray-700 mb-1">
                     入金日
@@ -407,11 +508,7 @@ export default function PaymentDetail() {
               <div className="border-b md:border-b-0 pb-4 md:pb-0">
                 <dt className="text-sm font-medium text-gray-500">状態</dt>
                 <dd className="mt-1">
-                  <span className={`px-2 py-1 rounded-full text-xs font-medium
-                    ${payment.状態 === '入金済み' ? 'bg-green-100 text-green-800' : 
-                      payment.状態 === '未入金' ? 'bg-yellow-100 text-yellow-800' : 
-                        'bg-gray-100 text-gray-800'}`}
-                  >
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusStyleClass(payment.状態)}`}>
                     {payment.状態 || '未設定'}
                   </span>
                 </dd>
