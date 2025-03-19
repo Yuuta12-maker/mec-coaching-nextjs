@@ -229,7 +229,7 @@ export default function ClientEditForm({ client, onSave, onCancel, loading }) {
             >
               <option value="">選択してください</option>
               <option value={CLIENT_STATUS.INQUIRY}>{CLIENT_STATUS.INQUIRY}</option>
-              <option value={CLIENT_STATUS.TRIAL_SCHEDULED}>{CLIENT_STATUS.TRIAL_SCHEDULED}</option>
+              <option value={CLIENT_STATUS.TRIAL_BEFORE}>{CLIENT_STATUS.TRIAL_BEFORE}</option>
               <option value={CLIENT_STATUS.TRIAL_COMPLETED}>{CLIENT_STATUS.TRIAL_COMPLETED}</option>
               <option value={CLIENT_STATUS.ONGOING}>{CLIENT_STATUS.ONGOING}</option>
               <option value={CLIENT_STATUS.COMPLETED}>{CLIENT_STATUS.COMPLETED}</option>
