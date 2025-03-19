@@ -122,27 +122,35 @@ export default function Layout({ children, forceAccess = false }) {
           </div>
         </header>
         
-        {/* シンプルなナビゲーションバー */}
-        <div className="bg-gray-900 shadow-lg">
+        {/* 完全にシンプル化したナビゲーションバー */}
+        <div className="bg-gray-900 text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <nav className="flex justify-center">
-              <Link href="/" className={`main-nav-link ${isActive('/') ? 'active' : ''}`}>
-                <span className="material-icons icon-shadow">dashboard</span>
-                <span className="nav-text">ダッシュボード</span>
+            <div className="flex justify-between md:justify-center">
+              <Link href="/" className="simple-nav-link">
+                <div className="flex flex-col items-center py-3">
+                  <span className="material-icons">dashboard</span>
+                  <span className="text-xs mt-1">ダッシュボード</span>
+                </div>
               </Link>
-              <Link href="/clients" className={`main-nav-link ${isActive('/clients') ? 'active' : ''}`}>
-                <span className="material-icons icon-shadow">people</span>
-                <span className="nav-text">クライアント</span>
+              <Link href="/clients" className="simple-nav-link">
+                <div className="flex flex-col items-center py-3">
+                  <span className="material-icons">people</span>
+                  <span className="text-xs mt-1">クライアント</span>
+                </div>
               </Link>
-              <Link href="/sessions" className={`main-nav-link ${isActive('/sessions') ? 'active' : ''}`}>
-                <span className="material-icons icon-shadow">event</span>
-                <span className="nav-text">セッション</span>
+              <Link href="/sessions" className="simple-nav-link">
+                <div className="flex flex-col items-center py-3">
+                  <span className="material-icons">event</span>
+                  <span className="text-xs mt-1">セッション</span>
+                </div>
               </Link>
-              <Link href="/payments" className={`main-nav-link ${isActive('/payments') ? 'active' : ''}`}>
-                <span className="material-icons icon-shadow">payments</span>
-                <span className="nav-text">支払い</span>
+              <Link href="/payments" className="simple-nav-link">
+                <div className="flex flex-col items-center py-3">
+                  <span className="material-icons">payments</span>
+                  <span className="text-xs mt-1">支払い</span>
+                </div>
               </Link>
-            </nav>
+            </div>
           </div>
         </div>
         
@@ -238,47 +246,35 @@ export default function Layout({ children, forceAccess = false }) {
       </div>
       
       <style jsx>{`
-        /* メインナビゲーションリンク - シンプルで安定したデザイン */
-        .main-nav-link {
-          display: flex;
-          align-items: center;
-          padding: 0.75rem 1.5rem;
-          color: #ffffff;
-          font-size: 0.9rem;
-          font-weight: 500;
-          transition: all 0.2s ease;
+        /* 超シンプルなナビゲーションリンク */
+        .simple-nav-link {
+          display: block;
+          color: #f9fafb;
           position: relative;
-          height: 3.5rem;
+          width: 25%;
+          text-align: center;
         }
         
-        .main-nav-link .material-icons {
-          font-size: 1.5rem;
-          margin-right: 0.75rem;
-          transition: color 0.2s ease;
-        }
-        
-        .icon-shadow {
-          filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.2));
-        }
-        
-        .main-nav-link:hover {
+        .simple-nav-link:hover {
           background-color: rgba(255, 255, 255, 0.1);
         }
         
-        .main-nav-link.active {
-          position: relative;
+        .simple-nav-link.active {
           background-color: rgba(255, 255, 255, 0.15);
         }
         
-        .main-nav-link.active::after {
+        .simple-nav-link.active::after {
           content: '';
           position: absolute;
           bottom: 0;
-          left: 10%;
-          width: 80%;
-          height: 3px;
+          left: 25%;
+          width: 50%;
+          height: 2px;
           background-color: var(--primary-color);
-          border-radius: 3px 3px 0 0;
+        }
+        
+        .simple-nav-link .material-icons {
+          font-size: 1.5rem;
         }
         
         /* モバイルナビゲーション */
@@ -309,23 +305,6 @@ export default function Layout({ children, forceAccess = false }) {
           color: #ffffff;
           font-weight: 600;
           border-left: 3px solid var(--primary-color);
-        }
-
-        /* レスポンシブ対応 */
-        @media (max-width: 768px) {
-          .nav-text {
-            display: none;
-          }
-          
-          .main-nav-link {
-            padding: 0.75rem;
-            justify-content: center;
-          }
-          
-          .main-nav-link .material-icons {
-            margin-right: 0;
-            font-size: 1.35rem;
-          }
         }
       `}</style>
     </div>
