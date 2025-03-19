@@ -127,7 +127,7 @@ export default function Dashboard({ weeklySessionsData, clientStatusData, client
               
               <Link href="/sessions/new" className="card card-interactive flex flex-col items-center justify-center py-8">
                 <div className="bg-blue-50 rounded-full h-12 w-12 flex items-center justify-center mb-3">
-                  <span className="material-icons text-blue-500">calendar_add_on</span>
+                  <span className="material-icons text-blue-500">add</span>
                 </div>
                 <h3 className="font-medium text-gray-800">セッション登録</h3>
               </Link>
