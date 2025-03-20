@@ -1,151 +1,80 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { useSession } from 'next-auth/react';
+import { useForm } from 'react-hook-form';
 import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
+import { getSheetData, config } from '../../lib/sheets';
 
-export default function NewPayment() {
+export default function NewPayment({ clientsData }) {
   const router = useRouter();
-  const { data: session, status } = useSession();
-  const { clientId } = router.query; // URLからクライアントIDを取得（任意）
-  
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [clients, setClients] = useState([]);
-  const [formData, setFormData] = useState({
-    クライアントID: '',
-    項目: '',
-    金額: '',
-    状態: '未入金',
-    備考: '',
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  
+  // react-hook-formの設定
+  const { register, handleSubmit, formState: { errors }, reset, watch } = useForm({
+    defaultValues: {
+      項目: 'トライアルセッション',
+      金額: 6000,
+      状態: '未入金',
+      登録日: new Date().toISOString().split('T')[0]
+    }
   });
-  const [clientData, setClientData] = useState(null); // 選択したクライアントの情報
-
-  // クライアント一覧を取得
+  
+  // 選択された項目に基づいて金額を自動設定
+  const selectedItem = watch('項目');
+  
   useEffect(() => {
-    async function fetchClients() {
-      try {
-        const response = await fetch('/api/clients');
-        if (!response.ok) {
-          throw new Error('クライアント情報の取得に失敗しました');
-        }
-        
-        const data = await response.json();
-        setClients(data.clients || []);
-        
-        // URLからクライアントIDが指定されていれば、フォームに設定
-        if (clientId) {
-          setFormData(prev => ({ ...prev, クライアントID: clientId }));
-          
-          // 該当クライアントの情報も取得
-          try {
-            const clientResponse = await fetch(`/api/clients/${clientId}`);
-            if (clientResponse.ok) {
-              const clientData = await clientResponse.json();
-              setClientData(clientData.client);
-            }
-          } catch (clientErr) {
-            console.error('クライアント詳細取得エラー:', clientErr);
-          }
-        }
-      } catch (err) {
-        console.error('クライアント一覧取得エラー:', err);
-        setError(err.message);
-      }
+    // 項目に基づいて金額を自動設定
+    if (selectedItem === 'トライアルセッション') {
+      reset({ ...watch(), 金額: 6000 });
+    } else if (selectedItem === '継続セッション') {
+      reset({ ...watch(), 金額: 214000 });
     }
+  }, [selectedItem, reset, watch]);
+  
+  useEffect(() => {
+    if (clientsData) {
+      setClients(clientsData);
+    }
+  }, [clientsData]);
 
-    if (status !== 'loading') {
-      fetchClients();
-    }
-  }, [status, clientId]);
-
-  // 選択したクライアントの情報を取得
-  const handleClientChange = async (e) => {
-    const selectedClientId = e.target.value;
-    setFormData({ ...formData, クライアントID: selectedClientId });
-    
-    if (!selectedClientId) {
-      setClientData(null);
-      return;
-    }
+  // フォーム送信処理
+  const onSubmit = async (data) => {
+    setIsSubmitting(true);
+    setError(null);
     
     try {
-      const response = await fetch(`/api/clients/${selectedClientId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setClientData(data.client);
-      } else {
-        setClientData(null);
-      }
-    } catch (err) {
-      console.error('クライアント情報取得エラー:', err);
-      setClientData(null);
-    }
-  };
-
-  // フォーム入力の変更を処理
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
-  };
-
-  // プリセット項目の選択
-  const handlePresetItem = (preset) => {
-    let amount = formData.金額;
-    
-    if (preset === 'トライアル') {
-      amount = '6000';
-    } else if (preset === '継続セッション') {
-      amount = '214000';
-    }
-    
-    setFormData({
-      ...formData,
-      項目: preset,
-      金額: amount
-    });
-  };
-
-  // 新規支払い登録
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    try {
-      setLoading(true);
-      setError(null);
+      // 支払いIDを生成
+      const paymentId = `payment_${Date.now()}`;
       
-      // フォームデータを準備
-      const paymentData = {
-        ...formData,
-        金額: parseInt(formData.金額, 10),
-      };
-      
-      const response = await fetch('/api/payments', {
+      // APIエンドポイントへデータを送信
+      const response = await fetch('/api/payments/create', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(paymentData),
+        body: JSON.stringify({
+          ...data,
+          支払いID: paymentId,
+        }),
       });
-      
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || '支払い登録に失敗しました');
-      }
       
       const result = await response.json();
       
-      // 成功メッセージを表示
-      alert('支払いを登録しました');
+      if (!response.ok) {
+        throw new Error(result.error || '支払い情報の登録に失敗しました');
+      }
       
-      // 登録したアイテムの詳細ページへリダイレクト
-      router.push(`/payments/${result.paymentId}`);
+      // 成功した場合、支払い一覧ページにリダイレクト
+      router.push('/payments');
+      
     } catch (err) {
-      console.error('支払い登録エラー:', err);
+      console.error('エラー:', err);
       setError(err.message);
     } finally {
-      setLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -154,183 +83,206 @@ export default function NewPayment() {
       <Head>
         <title>新規支払い登録 | マインドエンジニアリング・コーチング</title>
       </Head>
-
-      <div className="mb-6">
-        <div className="flex items-center gap-2 mb-1">
-          <Link href="/payments" className="text-[#c50502] hover:underline">
-            支払い一覧
-          </Link>
-          <span className="text-gray-500">&gt;</span>
-          <h1 className="text-xl font-bold text-gray-800">新規支払い登録</h1>
+      
+      <div className="page-header">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center">
+          <div>
+            <h1 className="page-title">新規支払い登録</h1>
+            <p className="page-description">新しい支払い情報を登録します</p>
+          </div>
+          <div className="mt-3 sm:mt-0">
+            <Link href="/payments" className="btn btn-outline">
+              <span className="material-icons mr-1">arrow_back</span>
+              支払い一覧に戻る
+            </Link>
+          </div>
         </div>
-        <p className="text-gray-600">新しい支払い記録を作成します</p>
       </div>
-
-      {/* エラーメッセージ */}
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-          <p>{error}</p>
+      
+      <div className="card">
+        <div className="card-header">
+          <h2 className="card-title">支払い情報入力</h2>
         </div>
-      )}
-
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <form onSubmit={handleSubmit} className="p-6">
+        
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md border border-red-200">
+            <p className="flex items-center">
+              <span className="material-icons mr-2 text-red-500">error</span>
+              {error}
+            </p>
+          </div>
+        )}
+        
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* クライアント選択 */}
-          <div className="mb-6">
-            <label htmlFor="クライアントID" className="block text-sm font-medium text-gray-700 mb-1">
-              クライアント <span className="text-red-500">*</span>
-            </label>
+          <div className="form-group">
+            <label htmlFor="clientId" className="form-label">クライアント <span className="text-red-500">*</span></label>
             <select
-              id="クライアントID"
-              name="クライアントID"
-              value={formData.クライアントID}
-              onChange={handleClientChange}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#c50502] focus:ring focus:ring-[#c50502] focus:ring-opacity-50"
-              required
+              id="clientId"
+              className={`form-select ${errors.クライアントID ? 'border-red-500' : ''}`}
+              {...register('クライアントID', { required: 'クライアントを選択してください' })}
             >
-              <option value="">クライアントを選択してください</option>
+              <option value="">クライアントを選択...</option>
               {clients.map((client) => (
                 <option key={client.クライアントID} value={client.クライアントID}>
-                  {client.お名前} （{client['お名前　（カナ）'] || 'カナなし'}）
+                  {client.お名前}
                 </option>
               ))}
             </select>
-            
-            {/* 選択したクライアント情報 */}
-            {clientData && (
-              <div className="mt-2 p-3 bg-gray-50 rounded-md">
-                <h3 className="text-sm font-medium text-gray-700">選択中のクライアント</h3>
-                <div className="mt-1 text-sm text-gray-600">
-                  <p>{clientData.お名前}</p>
-                  <p className="text-xs mt-1">ID: {clientData.クライアントID}</p>
-                </div>
-              </div>
+            {errors.クライアントID && (
+              <p className="mt-1 text-sm text-red-600">{errors.クライアントID.message}</p>
             )}
           </div>
-
-          {/* 項目プリセット */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              項目プリセット
-            </label>
-            <div className="flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => handlePresetItem('トライアル')}
-                className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-md text-sm"
-              >
-                トライアル (¥6,000)
-              </button>
-              <button
-                type="button"
-                onClick={() => handlePresetItem('継続セッション')}
-                className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-md text-sm"
-              >
-                継続セッション (¥214,000)
-              </button>
-              <button
-                type="button"
-                onClick={() => handlePresetItem('その他')}
-                className="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-md text-sm"
-              >
-                その他
-              </button>
-            </div>
+          
+          {/* 項目 */}
+          <div className="form-group">
+            <label htmlFor="item" className="form-label">項目 <span className="text-red-500">*</span></label>
+            <select
+              id="item"
+              className={`form-select ${errors.項目 ? 'border-red-500' : ''}`}
+              {...register('項目', { required: '項目を選択してください' })}
+            >
+              <option value="トライアルセッション">トライアルセッション</option>
+              <option value="継続セッション">継続セッション</option>
+              <option value="その他">その他</option>
+            </select>
+            {errors.項目 && (
+              <p className="mt-1 text-sm text-red-600">{errors.項目.message}</p>
+            )}
           </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* 項目 */}
-            <div>
-              <label htmlFor="項目" className="block text-sm font-medium text-gray-700 mb-1">
-                項目 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="項目"
-                name="項目"
-                value={formData.項目}
-                onChange={handleChange}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#c50502] focus:ring focus:ring-[#c50502] focus:ring-opacity-50"
-                placeholder="例: トライアル"
-                required
-              />
-            </div>
-            
-            {/* 金額 */}
-            <div>
-              <label htmlFor="金額" className="block text-sm font-medium text-gray-700 mb-1">
-                金額 <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <span className="text-gray-500">¥</span>
-                </div>
+          
+          {/* 金額 */}
+          <div className="form-group">
+            <label htmlFor="amount" className="form-label">金額 (円) <span className="text-red-500">*</span></label>
+            <input
+              type="number"
+              id="amount"
+              className={`form-input ${errors.金額 ? 'border-red-500' : ''}`}
+              {...register('金額', { 
+                required: '金額を入力してください',
+                min: { value: 1, message: '金額は1円以上で入力してください' }
+              })}
+            />
+            {errors.金額 && (
+              <p className="mt-1 text-sm text-red-600">{errors.金額.message}</p>
+            )}
+          </div>
+          
+          {/* 状態 */}
+          <div className="form-group">
+            <label className="form-label">状態 <span className="text-red-500">*</span></label>
+            <div className="flex space-x-4">
+              <label className="inline-flex items-center">
                 <input
-                  type="number"
-                  id="金額"
-                  name="金額"
-                  value={formData.金額}
-                  onChange={handleChange}
-                  className="pl-8 w-full rounded-md border-gray-300 shadow-sm focus:border-[#c50502] focus:ring focus:ring-[#c50502] focus:ring-opacity-50"
-                  placeholder="例: 6000"
-                  required
+                  type="radio"
+                  className="form-radio"
+                  value="未入金"
+                  {...register('状態', { required: '状態を選択してください' })}
                 />
-              </div>
-            </div>
-            
-            {/* 状態 */}
-            <div>
-              <label htmlFor="状態" className="block text-sm font-medium text-gray-700 mb-1">
-                状態 <span className="text-red-500">*</span>
+                <span className="ml-2">未入金</span>
               </label>
-              <select
-                id="状態"
-                name="状態"
-                value={formData.状態}
-                onChange={handleChange}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#c50502] focus:ring focus:ring-[#c50502] focus:ring-opacity-50"
-                required
-              >
-                <option value="未入金">未入金</option>
-                <option value="入金済み">入金済み</option>
-              </select>
-            </div>
-            
-            {/* 備考 */}
-            <div className="md:col-span-2">
-              <label htmlFor="備考" className="block text-sm font-medium text-gray-700 mb-1">
-                備考
+              <label className="inline-flex items-center">
+                <input
+                  type="radio"
+                  className="form-radio"
+                  value="入金済み"
+                  {...register('状態', { required: '状態を選択してください' })}
+                />
+                <span className="ml-2">入金済み</span>
               </label>
-              <textarea
-                id="備考"
-                name="備考"
-                value={formData.備考}
-                onChange={handleChange}
-                rows={3}
-                className="w-full rounded-md border-gray-300 shadow-sm focus:border-[#c50502] focus:ring focus:ring-[#c50502] focus:ring-opacity-50"
-                placeholder="メモや補足情報があれば入力してください"
+            </div>
+            {errors.状態 && (
+              <p className="mt-1 text-sm text-red-600">{errors.状態.message}</p>
+            )}
+          </div>
+          
+          {/* 登録日 */}
+          <div className="form-group">
+            <label htmlFor="registerDate" className="form-label">登録日 <span className="text-red-500">*</span></label>
+            <input
+              type="date"
+              id="registerDate"
+              className={`form-input ${errors.登録日 ? 'border-red-500' : ''}`}
+              {...register('登録日', { required: '登録日を入力してください' })}
+            />
+            {errors.登録日 && (
+              <p className="mt-1 text-sm text-red-600">{errors.登録日.message}</p>
+            )}
+          </div>
+          
+          {/* 入金日（状態が入金済みの場合のみ表示） */}
+          {watch('状態') === '入金済み' && (
+            <div className="form-group">
+              <label htmlFor="paidDate" className="form-label">入金日 <span className="text-red-500">*</span></label>
+              <input
+                type="date"
+                id="paidDate"
+                className={`form-input ${errors.入金日 ? 'border-red-500' : ''}`}
+                {...register('入金日', {
+                  required: '入金済みの場合は入金日を入力してください'
+                })}
               />
+              {errors.入金日 && (
+                <p className="mt-1 text-sm text-red-600">{errors.入金日.message}</p>
+              )}
             </div>
+          )}
+          
+          {/* 備考 */}
+          <div className="form-group">
+            <label htmlFor="notes" className="form-label">備考</label>
+            <textarea
+              id="notes"
+              className="form-textarea"
+              rows="3"
+              {...register('備考')}
+            ></textarea>
           </div>
           
           {/* 送信ボタン */}
-          <div className="mt-8 flex justify-end">
-            <Link
-              href="/payments"
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md mr-2 hover:bg-gray-50"
-            >
+          <div className="flex justify-end space-x-3 border-t border-gray-100 pt-6">
+            <Link href="/payments" className="btn btn-outline">
               キャンセル
             </Link>
             <button
               type="submit"
-              className="px-4 py-2 bg-[#c50502] hover:bg-[#a00401] text-white rounded-md"
-              disabled={loading}
+              className="btn btn-primary"
+              disabled={isSubmitting}
             >
-              {loading ? '処理中...' : '支払いを登録'}
+              {isSubmitting ? (
+                <>
+                  <div className="spinner-sm mr-2"></div>
+                  保存中...
+                </>
+              ) : (
+                '保存する'
+              )}
             </button>
           </div>
         </form>
       </div>
     </Layout>
   );
+}
+
+export async function getServerSideProps(context) {
+  try {
+    // クライアントデータを取得
+    const clients = await getSheetData(config.SHEET_NAMES.CLIENT);
+    
+    return {
+      props: {
+        clientsData: clients,
+      },
+    };
+  } catch (error) {
+    console.error('データ取得エラー:', error);
+    
+    return {
+      props: {
+        clientsData: [],
+        error: 'データの取得中にエラーが発生しました。',
+      },
+    };
+  }
 }
