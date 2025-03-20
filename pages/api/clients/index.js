@@ -84,7 +84,11 @@ async function handler(req, res) {
     }
     
     logger.info(`クライアント ${filteredClients.length}件のデータを返却`);
-    return res.status(200).json(filteredClients);
+    
+    // レスポンスの形式を変更：クライアントコンポーネントで期待される形式に合わせる
+    return res.status(200).json({
+      clients: filteredClients
+    });
     
   } catch (error) {
     logger.error('クライアント一覧取得エラー:', error);
