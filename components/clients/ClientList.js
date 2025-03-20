@@ -40,21 +40,30 @@ export default function ClientList() {
         
         const data = await response.json();
         console.log(`クライアントデータ取得成功: ${data.clients?.length || 0}件`);
+
+        // もしレスポンスがclientsフィールドなしで直接配列だったら対処する
+        const clientsData = Array.isArray(data) ? data : data.clients || [];
         
         // ステータスの正規化
-        const normalizedClients = data.clients?.map(client => {
-          // 古い表記を新しい表記に変換
+        const normalizedClients = clientsData.map(client => {
+          // ステータスを取得
           let status = client.ステータス || '';
           
-          if (status === '問合せ') status = CLIENT_STATUS.INQUIRY;
-          else if (status === 'トライアル予約済') status = CLIENT_STATUS.TRIAL_BEFORE;
-          else if (status === '継続中') status = CLIENT_STATUS.ONGOING;
+          // ステータスを正規化
+          if (status === '問合せ') status = CLIENT_STATUS.INQUIRY; // 「問合せ」→「問い合わせ」
+          else if (status === 'トライアル予約済') status = CLIENT_STATUS.TRIAL_BEFORE; // 「トライアル予約済」→「トライアル前」
+          else if (status === '継続中') status = CLIENT_STATUS.ONGOING; // 「継続中」→「契約中」
+          
+          // デバッグ用：元のステータスと変換後のステータスをログに出力
+          if (status !== client.ステータス) {
+            console.log(`ステータス正規化: "${client.ステータス}" → "${status}"`);
+          }
           
           return {
             ...client,
             ステータス: status
           };
-        }) || [];
+        });
         
         setClients(normalizedClients);
         setError(null);
