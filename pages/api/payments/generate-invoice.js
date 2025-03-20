@@ -2,8 +2,6 @@ import { getSession } from 'next-auth/react';
 import { findRowById, config } from '../../../lib/sheets';
 import logger from '../../../lib/logger';
 import * as PDFLib from 'pdf-lib';
-import fs from 'fs';
-import path from 'path';
 
 // 企業情報（設定で変更可能にするとよい）
 const COMPANY_INFO = {
@@ -31,6 +29,8 @@ const formatCurrency = (amount) => {
 };
 
 export default async function handler(req, res) {
+  // このAPIはサーバーサイドでのみ実行されるため、Node.js固有のモジュールを使用できます
+
   // POSTリクエストのみを許可
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -71,12 +71,8 @@ export default async function handler(req, res) {
     const invoiceNumber = `INV-${invoiceDate.replace(/-/g, '')}-${支払いID.slice(-4)}`;
     
     // PDF生成
-    // 注意: 本番環境ではPDF-Libを使用してPDFを生成するコードを実装する必要があります
-    // 以下はサンプルとしてのプレースホルダーコードです
-    
-    // PDF生成のサンプルコード
     try {
-      // PDF-Libでの実装サンプル（実際の環境に合わせて調整）
+      // PDF-Libでの実装
       const pdfDoc = await PDFLib.PDFDocument.create();
       const page = pdfDoc.addPage([595.28, 841.89]); // A4サイズ
       
