@@ -1,5 +1,6 @@
 import { getSession } from 'next-auth/react';
 import { findRowById, updateRowById, config } from '../../../lib/sheets';
+import { PAYMENT_STATUS } from '../../../lib/api-config';
 import logger from '../../../lib/logger';
 
 export default async function handler(req, res) {
@@ -29,8 +30,8 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: '指定された支払いが見つかりません' });
     }
     
-    if (payment.状態 === '入金済み') {
-      return res.status(400).json({ error: 'この支払いは既に入金済みです' });
+    if (payment.状態 === PAYMENT_STATUS.PAID) {
+      return res.status(400).json({ error: 'この支払いは既に入金済です' });
     }
     
     // 入金日（デフォルトは今日）
@@ -41,7 +42,7 @@ export default async function handler(req, res) {
       config.SHEET_NAMES.PAYMENT,
       支払いID,
       {
-        状態: '入金済み',
+        状態: PAYMENT_STATUS.PAID,
         入金日: paymentDate
       },
       '支払いID'
