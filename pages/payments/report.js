@@ -2,34 +2,49 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
-import { getSheetData, config } from '../../lib/sheets';
+import { getPayments, getClients, formatCurrency } from '../../lib/api-utils';
 
-export default function PaymentReport({ paymentsData, clientsData }) {
+export default function PaymentReport() {
   const [payments, setPayments] = useState([]);
   const [clients, setClients] = useState([]);
   const [timeRange, setTimeRange] = useState('all'); // 'all', 'year', 'month', 'custom'
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   useEffect(() => {
-    if (paymentsData) {
-      setPayments(paymentsData);
+    async function fetchData() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // APIからデータを取得
+        const paymentsData = await getPayments();
+        const clientsData = await getClients();
+        
+        console.log('支払いデータ取得:', paymentsData?.length || 0, '件');
+        console.log('クライアントデータ取得:', clientsData?.length || 0, '件');
+        
+        setPayments(paymentsData || []);
+        setClients(clientsData || []);
+        
+        // デフォルトの日付範囲を設定
+        const today = new Date();
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        
+        setCustomStartDate(firstDayOfMonth.toISOString().split('T')[0]);
+        setCustomEndDate(today.toISOString().split('T')[0]);
+      } catch (err) {
+        console.error('データ取得エラー:', err);
+        setError(err.message || 'データの取得に失敗しました');
+      } finally {
+        setIsLoading(false);
+      }
     }
     
-    if (clientsData) {
-      setClients(clientsData);
-    }
-    
-    // デフォルトの日付範囲を設定
-    const today = new Date();
-    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    
-    setCustomStartDate(firstDayOfMonth.toISOString().split('T')[0]);
-    setCustomEndDate(today.toISOString().split('T')[0]);
-    
-    setIsLoading(false);
-  }, [paymentsData, clientsData]);
+    fetchData();
+  }, []);
 
   // クライアントIDから名前を取得する関数
   const getClientName = (clientId) => {
@@ -189,6 +204,15 @@ export default function PaymentReport({ paymentsData, clientsData }) {
         </div>
       </div>
       
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md border border-red-200">
+          <p className="flex items-center">
+            <span className="material-icons mr-2 text-red-500">error</span>
+            {error}
+          </p>
+        </div>
+      )}
+      
       {isLoading ? (
         <div className="flex justify-center my-12">
           <div className="spinner"></div>
@@ -266,7 +290,7 @@ export default function PaymentReport({ paymentsData, clientsData }) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="bg-primary-ultralight p-4 rounded-lg text-center">
                   <h3 className="text-gray-700 text-sm font-medium mb-2">合計売上</h3>
-                  <p className="text-2xl font-bold text-primary">{totalAmount.toLocaleString()}円</p>
+                  <p className="text-2xl font-bold text-primary">{formatCurrency(totalAmount)}</p>
                 </div>
                 
                 <div className="bg-blue-50 p-4 rounded-lg text-center">
@@ -313,7 +337,7 @@ export default function PaymentReport({ paymentsData, clientsData }) {
                             {item.count}件
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium">
-                            {item.amount.toLocaleString()}円
+                            {formatCurrency(item.amount)}
                           </td>
                         </tr>
                       ))}
@@ -325,7 +349,7 @@ export default function PaymentReport({ paymentsData, clientsData }) {
                           {monthlyRevenue.reduce((sum, item) => sum + item.count, 0)}件
                         </th>
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          {monthlyRevenue.reduce((sum, item) => sum + item.amount, 0).toLocaleString()}円
+                          {formatCurrency(monthlyRevenue.reduce((sum, item) => sum + item.amount, 0))}
                         </th>
                       </tr>
                     </tfoot>
@@ -365,7 +389,7 @@ export default function PaymentReport({ paymentsData, clientsData }) {
                             {item.count}件
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium">
-                            {item.amount.toLocaleString()}円
+                            {formatCurrency(item.amount)}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
                             {totalAmount > 0 ? Math.round((item.amount / totalAmount) * 100) : 0}%
@@ -380,7 +404,7 @@ export default function PaymentReport({ paymentsData, clientsData }) {
                           {itemSummary.reduce((sum, item) => sum + item.count, 0)}件
                         </th>
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          {itemSummary.reduce((sum, item) => sum + item.amount, 0).toLocaleString()}円
+                          {formatCurrency(itemSummary.reduce((sum, item) => sum + item.amount, 0))}
                         </th>
                         <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                           100%
@@ -396,134 +420,3 @@ export default function PaymentReport({ paymentsData, clientsData }) {
               )}
             </div>
           </div>
-          
-          {/* クライアント別売上 */}
-          <div className="card mt-6">
-            <div className="card-header">
-              <h2 className="card-title">クライアント別売上（上位10件）</h2>
-            </div>
-            
-            {clientSummary.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">クライアント</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">件数</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">金額</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">割合</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {clientSummary.map((client, index) => (
-                      <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
-                          {client.name}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
-                          {client.count}件
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium">
-                          {client.amount.toLocaleString()}円
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
-                          {totalAmount > 0 ? Math.round((client.amount / totalAmount) * 100) : 0}%
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="p-6 text-center text-gray-500">
-                該当する期間のデータがありません
-              </div>
-            )}
-          </div>
-          
-          {/* 支払い詳細一覧 */}
-          <div className="card mt-6">
-            <div className="card-header border-b border-gray-100 pb-3">
-              <div className="flex flex-wrap items-center justify-between">
-                <h2 className="card-title">支払い一覧</h2>
-                <p className="text-sm text-gray-500">
-                  検索結果: {filteredPayments.length}件
-                </p>
-              </div>
-            </div>
-            
-            {filteredPayments.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">クライアント</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">項目</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">金額</th>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">入金日</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">アクション</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredPayments.map((payment, index) => (
-                      <tr key={payment.支払いID || index} className="hover:bg-gray-50">
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-800">
-                          <Link href={`/clients/${payment.クライアントID}`} className="text-primary hover:text-primary-dark">
-                            {getClientName(payment.クライアントID)}
-                          </Link>
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-800">
-                          {payment.項目}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800 text-right">
-                          {payment.金額?.toLocaleString?.() || 0}円
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                          {payment.入金日 ? new Date(payment.入金日).toLocaleDateString('ja-JP') : '-'}
-                        </td>
-                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
-                          <Link href={`/payments/${payment.支払いID}`} className="text-primary hover:text-primary-dark">
-                            詳細
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="py-6 text-center text-gray-500">
-                該当する支払いデータがありません
-              </div>
-            )}
-          </div>
-        </>
-      )}
-    </Layout>
-  );
-}
-
-export async function getServerSideProps(context) {
-  try {
-    // 支払いデータとクライアントデータを取得
-    const payments = await getSheetData(config.SHEET_NAMES.PAYMENT);
-    const clients = await getSheetData(config.SHEET_NAMES.CLIENT);
-    
-    return {
-      props: {
-        paymentsData: payments,
-        clientsData: clients,
-      },
-    };
-  } catch (error) {
-    console.error('データ取得エラー:', error);
-    
-    return {
-      props: {
-        paymentsData: [],
-        clientsData: [],
-        error: 'データの取得中にエラーが発生しました。',
-      },
-    };
-  }
-}
