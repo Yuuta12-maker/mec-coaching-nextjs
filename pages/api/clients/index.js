@@ -32,12 +32,21 @@ async function handler(req, res) {
     if (search) {
       const keyword = search.toLowerCase();
       filteredClients = filteredClients.filter(client => {
-        return (
-          (client.お名前 && client.お名前.toLowerCase().includes(keyword)) ||
-          (client['お名前　（カナ）'] && client['お名前　（カナ）'].toLowerCase().includes(keyword)) ||
-          (client.メールアドレス && client.メールアドレス.toLowerCase().includes(keyword)) ||
-          (client.電話番号　（ハイフンなし） && client.電話番号　（ハイフンなし）.includes(keyword))
-        );
+        // 名前
+        const nameMatch = client.お名前 && client.お名前.toLowerCase().includes(keyword);
+        
+        // カナ名（オブジェクトのキーにブラケット記法でアクセス）
+        const kanaField = "お名前　（カナ）";
+        const kanaMatch = client[kanaField] && client[kanaField].toLowerCase().includes(keyword);
+        
+        // メールアドレス
+        const emailMatch = client.メールアドレス && client.メールアドレス.toLowerCase().includes(keyword);
+        
+        // 電話番号
+        const phoneField = "電話番号　（ハイフンなし）";
+        const phoneMatch = client[phoneField] && client[phoneField].includes(keyword);
+        
+        return nameMatch || kanaMatch || emailMatch || phoneMatch;
       });
     }
     
