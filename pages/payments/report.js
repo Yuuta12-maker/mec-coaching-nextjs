@@ -3,6 +3,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
 import { getPayments, getClients, formatCurrency } from '../../lib/api-utils';
+import { PAYMENT_STATUS } from '../../lib/constants';
 
 export default function PaymentReport() {
   const [payments, setPayments] = useState([]);
@@ -83,9 +84,15 @@ export default function PaymentReport() {
     return true;
   };
 
+  // 支払い状態が「入金済」のものをフィルタリング（表記の揺れに対応）
+  const isPaid = (payment) => {
+    const status = payment.状態;
+    return status === PAYMENT_STATUS.PAID || status === '入金済み';
+  };
+
   // フィルタリングされた支払いデータ
   const filteredPayments = payments
-    .filter(payment => payment.状態 === '入金済み')
+    .filter(isPaid)
     .filter(filterPaymentsByDate);
 
   // 合計金額
