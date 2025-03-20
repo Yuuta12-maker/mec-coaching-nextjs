@@ -4,6 +4,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
 import { getPayments, getClients, formatCurrency, getStatusColorClass } from '../../lib/api-utils';
+import { PAYMENT_STATUS } from '../../lib/api-config';
 
 export default function Payments() {
   const { data: session } = useSession();
@@ -39,8 +40,8 @@ export default function Payments() {
   // 支払いステータスでフィルタリングする関数
   const filteredPayments = payments.filter(payment => {
     if (filter === 'all') return true;
-    if (filter === 'paid') return payment.状態 === '入金済み';
-    if (filter === 'unpaid') return payment.状態 === '未入金';
+    if (filter === 'paid') return payment.状態 === PAYMENT_STATUS.PAID;
+    if (filter === 'unpaid') return payment.状態 === PAYMENT_STATUS.UNPAID;
     return true;
   });
 
@@ -53,7 +54,7 @@ export default function Payments() {
   // 合計金額を計算
   const totalAmount = payments.reduce((sum, payment) => sum + (payment.金額 || 0), 0);
   const paidAmount = payments
-    .filter(payment => payment.状態 === '入金済み')
+    .filter(payment => payment.状態 === PAYMENT_STATUS.PAID)
     .reduce((sum, payment) => sum + (payment.金額 || 0), 0);
   
   // 月別の売上データを計算
@@ -61,7 +62,7 @@ export default function Payments() {
     const monthlyData = {};
     
     payments.forEach(payment => {
-      if (payment.状態 !== '入金済み' || !payment.入金日) return;
+      if (payment.状態 !== PAYMENT_STATUS.PAID || !payment.入金日) return;
       
       const date = new Date(payment.入金日);
       const yearMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
@@ -140,7 +141,7 @@ export default function Payments() {
                       className={`px-3 py-1 text-sm rounded-md ${filter === 'paid' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'}`}
                       onClick={() => setFilter('paid')}
                     >
-                      入金済み
+                      入金済
                     </button>
                     <button 
                       className={`px-3 py-1 text-sm rounded-md ${filter === 'unpaid' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'}`}
@@ -182,7 +183,7 @@ export default function Payments() {
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm">
                             <span className={`px-2 py-1 inline-flex text-xs leading-5 font-medium rounded-full ${getStatusColorClass(payment.状態)}`}>
-                              {payment.状態 || '未入金'}
+                              {payment.状態 || PAYMENT_STATUS.UNPAID}
                             </span>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
@@ -195,7 +196,7 @@ export default function Payments() {
                             <Link href={`/payments/${payment.支払いID}`} className="text-primary hover:text-primary-dark mr-3">
                               詳細
                             </Link>
-                            {payment.状態 !== '入金済み' && (
+                            {payment.状態 !== PAYMENT_STATUS.PAID && (
                               <button
                                 className="text-green-600 hover:text-green-800"
                                 onClick={() => {
@@ -237,7 +238,7 @@ export default function Payments() {
                   <span className="text-lg font-semibold">{formatCurrency(totalAmount)}</span>
                 </div>
                 <div className="flex justify-between items-center px-4 py-2">
-                  <span className="text-gray-600">入金済み:</span>
+                  <span className="text-gray-600">入金済:</span>
                   <span className="text-lg font-semibold text-green-600">{formatCurrency(paidAmount)}</span>
                 </div>
                 <div className="flex justify-between items-center px-4 py-2 bg-gray-50">
