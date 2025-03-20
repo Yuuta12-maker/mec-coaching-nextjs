@@ -1,219 +1,69 @@
-import { findRowById, updateRowById, config, testConnection } from '../../../lib/sheets';
-import { getSession } from 'next-auth/react';
+import { findRowById, config } from '../../../lib/sheets';
+import { withApiMiddleware, createApiRoute } from '../../../lib/api-middleware';
 import logger from '../../../lib/logger';
 
-export default async function handler(req, res) {
-  // セッションチェック（認証済みかどうか - 開発中はコメントアウト可）
-  /*
-  const session = await getSession({ req });
-  if (!session) {
-    return res.status(401).json({ error: '認証が必要です' });
-  }
-  */
-
-  // 支払いIDを取得
+/**
+ * 支払い詳細を取得するAPI
+ * 
+ * @param {Object} req - リクエストオブジェクト
+ * @param {Object} res - レスポンスオブジェクト
+ * @returns {Object} 支払い詳細データ
+ */
+async function getPaymentDetail(req, res) {
   const { id } = req.query;
+  
   if (!id) {
-    return res.status(400).json({ error: '支払いIDが必要です' });
-  }
-
-  // リクエストメソッドに応じた処理分岐
-  switch (req.method) {
-    case 'GET':
-      // 特定の支払い情報を取得
-      return await getPayment(req, res, id);
-    case 'PUT':
-      // 支払い情報を更新
-      return await updatePayment(req, res, id);
-    default:
-      return res.status(405).json({ error: 'メソッドが許可されていません' });
-  }
-}
-
-/**
- * 支払い状態を正規化する関数
- * @param {string} status - 元の状態文字列
- * @returns {string} 正規化された状態文字列
- */
-function normalizePaymentStatus(status) {
-  if (!status) return '未入金';
-  
-  const normalizedStatus = status.toString().trim().toLowerCase();
-  
-  // 入金済系の判定
-  if (normalizedStatus === '入金済' || 
-      normalizedStatus === '入金済み' || 
-      normalizedStatus.includes('入金') || 
-      normalizedStatus.includes('支払済') || 
-      normalizedStatus.includes('支払い済')) {
-    return '入金済';
+    return res.status(400).json({ error: '支払いIDは必須です' });
   }
   
-  // 未入金系の判定
-  if (normalizedStatus === '未入金' || 
-      normalizedStatus.includes('未払') || 
-      normalizedStatus.includes('未収')) {
-    return '未入金';
-  }
-
-  // キャンセル系の判定
-  if (normalizedStatus === 'キャンセル' ||
-      normalizedStatus.includes('cancel') ||
-      normalizedStatus.includes('取消')) {
-    return 'キャンセル';
-  }
-  
-  // 上記以外はデフォルトで未入金とする
-  return '未入金';
-}
-
-/**
- * 特定の支払い情報を取得する関数
- */
-async function getPayment(req, res, id) {
   try {
-    logger.info(`支払い詳細取得API呼び出し開始: ID=${id}`);
+    logger.info(`支払い詳細の取得を開始: ID=${id}`);
     
-    // まず接続テストを実行
-    try {
-      logger.info('スプレッドシート接続テスト実行');
-      const testResult = await testConnection();
-      logger.info(`接続テスト結果: ${JSON.stringify(testResult)}`);
-    } catch (testError) {
-      logger.error('接続テストエラー:', testError);
-      return res.status(500).json({ 
-        error: 'スプレッドシートへの接続テストに失敗しました', 
-        details: testError.message,
-        stack: process.env.NODE_ENV === 'development' ? testError.stack : undefined
-      });
-    }
-    
+    // 支払い情報を取得
     const payment = await findRowById(config.SHEET_NAMES.PAYMENT, id, '支払いID');
     
     if (!payment) {
-      logger.warn(`支払い記録が見つかりません: ID=${id}`);
-      return res.status(404).json({ error: '指定された支払い記録が見つかりません' });
+      return res.status(404).json({ error: '指定された支払いが見つかりません' });
     }
     
-    logger.info(`支払い詳細取得成功: ID=${id}`);
+    // クライアント情報も取得する
+    const client = await findRowById(config.SHEET_NAMES.CLIENT, payment.クライアントID, 'クライアントID');
     
-    // 状態を正規化
-    payment['状態'] = normalizePaymentStatus(payment['状態']);
-    
-    // 金額データの正規化
-    if (payment['金額'] !== undefined) {
-      // 数値に変換を試みる
-      const amount = payment['金額'].toString();
-      const numericAmount = parseFloat(amount.replace(/[^0-9.-]/g, ''));
-      
-      if (!isNaN(numericAmount)) {
-        payment['金額'] = numericAmount;
-      } else {
-        logger.warn(`不正な金額データ: ${payment['金額']}`);
-        payment['金額'] = 0; // デフォルト値として0を設定
-      }
+    if (!client) {
+      logger.warn(`支払い ${id} に紐づくクライアントが見つかりません: クライアントID=${payment.クライアントID}`);
     }
     
-    // クライアント名の追加（可能な場合）
-    try {
-      if (payment['クライアントID']) {
-        const client = await findRowById(config.SHEET_NAMES.CLIENT, payment['クライアントID'], 'クライアントID');
-        if (client) {
-          payment['クライアント名'] = client['お名前'] || '不明';
-        }
-      }
-    } catch (clientError) {
-      logger.warn('クライアント情報取得エラー:', clientError);
-      // クライアント情報の取得に失敗しても支払い情報は返す
-    }
+    logger.info(`支払い詳細を返却: ID=${id}, クライアント=${client?.お名前 || '不明'}`);
+    return res.status(200).json({ payment, client });
     
-    return res.status(200).json(payment);
   } catch (error) {
-    logger.error('支払い情報取得エラー:', error);
+    logger.error(`支払い詳細取得エラー(ID=${id}):`, error);
     return res.status(500).json({ 
-      error: '支払い情報の取得に失敗しました', 
-      details: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: '支払い詳細の取得に失敗しました',
+      message: error.message
     });
   }
 }
 
 /**
- * 支払い情報を更新する関数（主に入金確認用）
+ * 支払い情報を更新するAPI
+ * 
+ * @param {Object} req - リクエストオブジェクト
+ * @param {Object} res - レスポンスオブジェクト
+ * @returns {Object} 更新結果
  */
-async function updatePayment(req, res, id) {
-  try {
-    logger.info(`支払い情報更新API呼び出し開始: ID=${id}`);
-    let data = req.body;
-    
-    // 支払い記録が存在するか確認
-    const existingPayment = await findRowById(config.SHEET_NAMES.PAYMENT, id, '支払いID');
-    if (!existingPayment) {
-      logger.warn(`支払い記録が見つかりません: ID=${id}`);
-      return res.status(404).json({ error: '指定された支払い記録が見つかりません' });
-    }
-    
-    // 更新不可のフィールドを除外
-    const updateData = { ...data };
-    delete updateData['支払いID']; // IDは更新不可
-    delete updateData['クライアントID']; // クライアントIDは変更不可
-    delete updateData['登録日']; // 登録日は変更不可
-    
-    // 状態の正規化
-    if (updateData['状態']) {
-      updateData['状態'] = normalizePaymentStatus(updateData['状態']);
-    }
-    
-    // 入金確認の場合の処理
-    if (updateData['状態'] === '入金済' && !updateData['入金日']) {
-      const today = new Date();
-      updateData['入金日'] = today.toISOString().split('T')[0]; // YYYY-MM-DD形式
-    }
-
-    // キャンセル処理の場合は入金日をクリア
-    if (updateData['状態'] === 'キャンセル') {
-      updateData['入金日'] = '';
-    }
-    
-    // 金額のフォーマットチェック（更新する場合）
-    if (updateData['金額'] !== undefined) {
-      let amount;
-      
-      if (typeof updateData['金額'] === 'number') {
-        amount = updateData['金額'];
-      } else if (typeof updateData['金額'] === 'string') {
-        // 文字列から数値への変換（カンマや記号を除去）
-        const cleanedAmount = updateData['金額'].replace(/[^0-9.-]/g, '');
-        amount = parseFloat(cleanedAmount);
-      } else {
-        amount = NaN;
-      }
-      
-      if (isNaN(amount)) {
-        logger.warn(`不正な金額フォーマット: ${updateData['金額']}`);
-        return res.status(400).json({ error: '金額は数値で入力してください' });
-      }
-      
-      updateData['金額'] = amount; // 数値型に変換
-    }
-    
-    logger.info(`支払い情報更新内容: ${JSON.stringify(updateData)}`);
-    
-    // スプレッドシートを更新
-    await updateRowById(config.SHEET_NAMES.PAYMENT, id, updateData, '支払いID');
-    
-    logger.info(`支払い情報更新成功: ID=${id}`);
-    return res.status(200).json({ 
-      success: true, 
-      message: '支払い情報を更新しました',
-      paymentId: id
-    });
-  } catch (error) {
-    logger.error('支払い更新エラー:', error);
-    return res.status(500).json({ 
-      error: '支払い情報の更新に失敗しました', 
-      details: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
-  }
+async function updatePayment(req, res) {
+  // この関数はエンドポイント /api/payments/update に実装されているため
+  // ここでは404を返す
+  return res.status(404).json({ error: '更新APIは /api/payments/update を使用してください' });
 }
+
+// API ルートを作成（GETとPUTメソッドのみ許可）
+export default withApiMiddleware(
+  createApiRoute({
+    methods: {
+      GET: getPaymentDetail,
+      PUT: updatePayment
+    }
+  })
+);
