@@ -8,12 +8,13 @@ import { getSheetData, config } from '../../lib/sheets';
 
 export default function NewPayment({ clientsData }) {
   const router = useRouter();
+  const { clientId } = router.query; // URLからクライアントIDを取得
   const [clients, setClients] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   
   // react-hook-formの設定
-  const { register, handleSubmit, formState: { errors }, reset, watch } = useForm({
+  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm({
     defaultValues: {
       項目: 'トライアルセッション',
       金額: 6000,
@@ -38,7 +39,12 @@ export default function NewPayment({ clientsData }) {
     if (clientsData) {
       setClients(clientsData);
     }
-  }, [clientsData]);
+    
+    // URLパラメータでクライアントIDが指定されていれば自動選択
+    if (clientId) {
+      setValue('クライアントID', clientId);
+    }
+  }, [clientsData, clientId, setValue]);
 
   // フォーム送信処理
   const onSubmit = async (data) => {
