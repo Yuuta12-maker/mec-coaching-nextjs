@@ -90,7 +90,10 @@ async function handler(req, res) {
     }
     
     logger.info(`支払い ${filteredPayments.length}件のデータを返却`);
-    return res.status(200).json(filteredPayments);
+    // クライアント一覧と同じ形式でレスポンスを返す
+    return res.status(200).json({
+      payments: filteredPayments
+    });
     
   } catch (error) {
     logger.error('支払い一覧取得エラー:', error);
