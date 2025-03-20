@@ -5,6 +5,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
 import { fetchData, formatDate, formatCurrency, getStatusColorClass } from '../../lib/api-utils';
+import { PAYMENT_STATUS } from '../../lib/api-config';
 
 export default function PaymentDetail() {
   const router = useRouter();
@@ -294,7 +295,7 @@ export default function PaymentDetail() {
                   </button>
                 )}
                 
-                {payment.状態 !== '入金済み' && !isEditing && (
+                {payment.状態 !== PAYMENT_STATUS.PAID && !isEditing && (
                   <button
                     className="btn btn-sm btn-success"
                     onClick={confirmPayment}
@@ -352,7 +353,7 @@ export default function PaymentDetail() {
                       <input
                         type="radio"
                         className="form-radio"
-                        value="未入金"
+                        value={PAYMENT_STATUS.UNPAID}
                         {...register('状態', { required: '状態を選択してください' })}
                       />
                       <span className="ml-2">未入金</span>
@@ -361,10 +362,10 @@ export default function PaymentDetail() {
                       <input
                         type="radio"
                         className="form-radio"
-                        value="入金済み"
+                        value={PAYMENT_STATUS.PAID}
                         {...register('状態', { required: '状態を選択してください' })}
                       />
-                      <span className="ml-2">入金済み</span>
+                      <span className="ml-2">入金済</span>
                     </label>
                   </div>
                   {errors.状態 && (
@@ -387,7 +388,7 @@ export default function PaymentDetail() {
                 </div>
                 
                 {/* 入金日（状態が入金済みの場合のみ表示） */}
-                {watch('状態') === '入金済み' && (
+                {watch('状態') === PAYMENT_STATUS.PAID && (
                   <div className="form-group">
                     <label htmlFor="paidDate" className="form-label">入金日 <span className="text-red-500">*</span></label>
                     <input
@@ -395,7 +396,7 @@ export default function PaymentDetail() {
                       id="paidDate"
                       className={`form-input ${errors.入金日 ? 'border-red-500' : ''}`}
                       {...register('入金日', {
-                        required: '入金済みの場合は入金日を入力してください'
+                        required: '入金済の場合は入金日を入力してください'
                       })}
                     />
                     {errors.入金日 && (
@@ -462,7 +463,7 @@ export default function PaymentDetail() {
                     <h3 className="text-sm font-medium text-gray-500">状態</h3>
                     <p className="mt-1">
                       <span className={`px-2 py-1 inline-flex text-sm leading-5 font-medium rounded-full ${getStatusColorClass(payment.状態)}`}>
-                        {payment.状態 || '未入金'}
+                        {payment.状態 || PAYMENT_STATUS.UNPAID}
                       </span>
                     </p>
                   </div>
@@ -536,7 +537,7 @@ export default function PaymentDetail() {
                 請求書を生成
               </button>
               
-              {payment.状態 !== '入金済み' && (
+              {payment.状態 !== PAYMENT_STATUS.PAID && (
                 <button
                   className="btn btn-success w-full flex items-center justify-center"
                   onClick={confirmPayment}
