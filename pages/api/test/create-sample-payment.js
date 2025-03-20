@@ -21,9 +21,12 @@ async function handler(req, res) {
     // サンプルクライアントID
     const clientId = 'test-client-1';
 
+    // 一意のIDを生成
+    const paymentId = `test-payment-${uuidv4().substring(0, 8)}`;
+    
     // サンプル支払いデータ
     const samplePayment = {
-      支払いID: `test-payment-${uuidv4().substring(0, 8)}`,
+      支払いID: paymentId,
       クライアントID: clientId,
       項目: 'トライアルセッション',
       金額: 6000,
