@@ -4,9 +4,9 @@ import { useForm } from 'react-hook-form';
 import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
-import { getSheetData, findRowById, config } from '../../lib/sheets';
+import { fetchData, formatDate, formatCurrency, getStatusColorClass } from '../../lib/api-utils';
 
-export default function PaymentDetail({ paymentData, clientData }) {
+export default function PaymentDetail() {
   const router = useRouter();
   const { id } = router.query;
   const [payment, setPayment] = useState(null);
@@ -15,30 +15,58 @@ export default function PaymentDetail({ paymentData, clientData }) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   // react-hook-formの設定
   const { register, handleSubmit, formState: { errors }, reset, watch } = useForm();
   
+  // 支払い情報とクライアント情報の取得
   useEffect(() => {
-    if (paymentData) {
-      setPayment(paymentData);
+    async function loadPaymentData() {
+      if (!id) return; // IDがない場合は何もしない
       
-      // フォームの初期値を設定
-      reset({
-        クライアントID: paymentData.クライアントID,
-        項目: paymentData.項目,
-        金額: paymentData.金額,
-        状態: paymentData.状態,
-        登録日: paymentData.登録日,
-        入金日: paymentData.入金日 || '',
-        備考: paymentData.備考 || ''
-      });
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // APIから支払い詳細を取得
+        const result = await fetchData(`payments/${id}`);
+        
+        if (result && result.payment) {
+          setPayment(result.payment);
+          
+          // クライアント情報も取得
+          if (result.client) {
+            setClient(result.client);
+          } else {
+            // クライアント情報が含まれていない場合は別途取得
+            const clientResult = await fetchData(`clients/${result.payment.クライアントID}`);
+            if (clientResult && clientResult.client) {
+              setClient(clientResult.client);
+            }
+          }
+          
+          // フォームの初期値を設定
+          reset({
+            クライアントID: result.payment.クライアントID,
+            項目: result.payment.項目,
+            金額: result.payment.金額,
+            状態: result.payment.状態,
+            登録日: result.payment.登録日,
+            入金日: result.payment.入金日 || '',
+            備考: result.payment.備考 || ''
+          });
+        }
+      } catch (err) {
+        console.error('支払いデータ取得エラー:', err);
+        setError(err.message || '支払い情報の取得に失敗しました');
+      } finally {
+        setIsLoading(false);
+      }
     }
     
-    if (clientData) {
-      setClient(clientData);
-    }
-  }, [paymentData, clientData, reset]);
+    loadPaymentData();
+  }, [id, reset]);
 
   // 編集フォームの送信
   const onSubmit = async (data) => {
@@ -166,12 +194,40 @@ export default function PaymentDetail({ paymentData, clientData }) {
     }
   };
 
-  if (!payment || !client) {
+  if (isLoading) {
     return (
       <Layout>
         <div className="flex justify-center my-12">
           <div className="spinner"></div>
         </div>
+      </Layout>
+    );
+  }
+
+  if (error && !payment) {
+    return (
+      <Layout>
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+          <p className="font-bold">エラーが発生しました</p>
+          <p>{error}</p>
+        </div>
+        <Link href="/payments" className="text-primary hover:underline">
+          支払い一覧に戻る
+        </Link>
+      </Layout>
+    );
+  }
+
+  if (!payment || !client) {
+    return (
+      <Layout>
+        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
+          <p className="font-bold">データが見つかりません</p>
+          <p>指定された支払いデータが見つかりませんでした。</p>
+        </div>
+        <Link href="/payments" className="text-primary hover:underline">
+          支払い一覧に戻る
+        </Link>
       </Layout>
     );
   }
@@ -398,14 +454,14 @@ export default function PaymentDetail({ paymentData, clientData }) {
                   {/* 金額 */}
                   <div>
                     <h3 className="text-sm font-medium text-gray-500">金額</h3>
-                    <p className="mt-1 text-lg font-semibold">{payment.金額?.toLocaleString?.() || 0}円</p>
+                    <p className="mt-1 text-lg font-semibold">{formatCurrency(payment.金額)}</p>
                   </div>
                   
                   {/* 状態 */}
                   <div>
                     <h3 className="text-sm font-medium text-gray-500">状態</h3>
                     <p className="mt-1">
-                      <span className={`px-2 py-1 inline-flex text-sm leading-5 font-medium rounded-full ${payment.状態 === '入金済み' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      <span className={`px-2 py-1 inline-flex text-sm leading-5 font-medium rounded-full ${getStatusColorClass(payment.状態)}`}>
                         {payment.状態 || '未入金'}
                       </span>
                     </p>
@@ -415,7 +471,7 @@ export default function PaymentDetail({ paymentData, clientData }) {
                   <div>
                     <h3 className="text-sm font-medium text-gray-500">登録日</h3>
                     <p className="mt-1 text-lg">
-                      {payment.登録日 ? new Date(payment.登録日).toLocaleDateString('ja-JP') : '-'}
+                      {formatDate(payment.登録日)}
                     </p>
                   </div>
                   
@@ -423,7 +479,7 @@ export default function PaymentDetail({ paymentData, clientData }) {
                   <div>
                     <h3 className="text-sm font-medium text-gray-500">入金日</h3>
                     <p className="mt-1 text-lg">
-                      {payment.入金日 ? new Date(payment.入金日).toLocaleDateString('ja-JP') : '-'}
+                      {formatDate(payment.入金日)}
                     </p>
                   </div>
                 </div>
@@ -496,43 +552,4 @@ export default function PaymentDetail({ paymentData, clientData }) {
       </div>
     </Layout>
   );
-}
-
-export async function getServerSideProps(context) {
-  const { id } = context.params;
-  
-  try {
-    // 支払いデータを取得
-    const payment = await findRowById(config.SHEET_NAMES.PAYMENT, id, '支払いID');
-    
-    if (!payment) {
-      return {
-        notFound: true,
-      };
-    }
-    
-    // クライアントデータを取得
-    const client = await findRowById(config.SHEET_NAMES.CLIENT, payment.クライアントID, 'クライアントID');
-    
-    if (!client) {
-      return {
-        notFound: true,
-      };
-    }
-    
-    return {
-      props: {
-        paymentData: payment,
-        clientData: client,
-      },
-    };
-  } catch (error) {
-    console.error('データ取得エラー:', error);
-    
-    return {
-      props: {
-        error: 'データの取得中にエラーが発生しました。',
-      },
-    };
-  }
 }
