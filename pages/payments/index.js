@@ -3,26 +3,38 @@ import { useSession } from 'next-auth/react';
 import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
-import { getSheetData, config } from '../../lib/sheets';
+import { getPayments, getClients, formatCurrency, getStatusColorClass } from '../../lib/api-utils';
 
-export default function Payments({ paymentsData, clientsData }) {
+export default function Payments() {
   const { data: session } = useSession();
   const [payments, setPayments] = useState([]);
   const [clients, setClients] = useState([]);
   const [filter, setFilter] = useState('all'); // 'all', 'paid', 'unpaid'
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (paymentsData) {
-      setPayments(paymentsData);
+    async function fetchData() {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        // APIからデータを取得
+        const paymentsData = await getPayments();
+        const clientsData = await getClients();
+        
+        setPayments(paymentsData || []);
+        setClients(clientsData || []);
+      } catch (err) {
+        console.error('データ取得エラー:', err);
+        setError(err.message);
+      } finally {
+        setIsLoading(false);
+      }
     }
     
-    if (clientsData) {
-      setClients(clientsData);
-    }
-    
-    setIsLoading(false);
-  }, [paymentsData, clientsData]);
+    fetchData();
+  }, []);
 
   // 支払いステータスでフィルタリングする関数
   const filteredPayments = payments.filter(payment => {
@@ -96,6 +108,15 @@ export default function Payments({ paymentsData, clientsData }) {
         </div>
       </div>
       
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md border border-red-200">
+          <p className="flex items-center">
+            <span className="material-icons mr-2 text-red-500">error</span>
+            {error}
+          </p>
+        </div>
+      )}
+      
       {isLoading ? (
         <div className="flex justify-center my-12">
           <div className="spinner"></div>
@@ -157,10 +178,10 @@ export default function Payments({ paymentsData, clientsData }) {
                             {payment.項目}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
-                            {payment.金額?.toLocaleString?.() || 0}円
+                            {formatCurrency(payment.金額)}
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm">
-                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-medium rounded-full ${payment.状態 === '入金済み' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                            <span className={`px-2 py-1 inline-flex text-xs leading-5 font-medium rounded-full ${getStatusColorClass(payment.状態)}`}>
                               {payment.状態 || '未入金'}
                             </span>
                           </td>
@@ -213,15 +234,15 @@ export default function Payments({ paymentsData, clientsData }) {
                 </div>
                 <div className="flex justify-between items-center px-4 py-2 bg-gray-50">
                   <span className="text-gray-600">総額:</span>
-                  <span className="text-lg font-semibold">{totalAmount.toLocaleString()}円</span>
+                  <span className="text-lg font-semibold">{formatCurrency(totalAmount)}</span>
                 </div>
                 <div className="flex justify-between items-center px-4 py-2">
                   <span className="text-gray-600">入金済み:</span>
-                  <span className="text-lg font-semibold text-green-600">{paidAmount.toLocaleString()}円</span>
+                  <span className="text-lg font-semibold text-green-600">{formatCurrency(paidAmount)}</span>
                 </div>
                 <div className="flex justify-between items-center px-4 py-2 bg-gray-50">
                   <span className="text-gray-600">未入金:</span>
-                  <span className="text-lg font-semibold text-red-600">{(totalAmount - paidAmount).toLocaleString()}円</span>
+                  <span className="text-lg font-semibold text-red-600">{formatCurrency(totalAmount - paidAmount)}</span>
                 </div>
                 <div className="flex justify-between items-center px-4 py-2">
                   <span className="text-gray-600">入金率:</span>
@@ -250,7 +271,7 @@ export default function Payments({ paymentsData, clientsData }) {
                   {monthlyRevenue.map((item, index) => (
                     <div key={index} className={`flex justify-between items-center px-4 py-2 ${index % 2 === 1 ? 'bg-gray-50' : ''}`}>
                       <span className="text-gray-600">{item.label}:</span>
-                      <span className="text-lg font-semibold">{item.amount.toLocaleString()}円</span>
+                      <span className="text-lg font-semibold">{formatCurrency(item.amount)}</span>
                     </div>
                   ))}
                 </div>
@@ -265,29 +286,4 @@ export default function Payments({ paymentsData, clientsData }) {
       )}
     </Layout>
   );
-}
-
-export async function getServerSideProps(context) {
-  try {
-    // 支払いデータとクライアントデータを取得
-    const payments = await getSheetData(config.SHEET_NAMES.PAYMENT);
-    const clients = await getSheetData(config.SHEET_NAMES.CLIENT);
-    
-    return {
-      props: {
-        paymentsData: payments,
-        clientsData: clients,
-      },
-    };
-  } catch (error) {
-    console.error('データ取得エラー:', error);
-    
-    return {
-      props: {
-        paymentsData: [],
-        clientsData: [],
-        error: 'データの取得中にエラーが発生しました。',
-      },
-    };
-  }
 }
