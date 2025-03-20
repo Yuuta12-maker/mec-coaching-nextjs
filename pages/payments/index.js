@@ -4,7 +4,7 @@ import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
 import { getPayments, getClients, formatCurrency, getStatusColorClass } from '../../lib/api-utils';
-import { PAYMENT_STATUS } from '../../lib/api-config';
+import { PAYMENT_STATUS } from '../../lib/constants';
 
 export default function Payments() {
   const { data: session } = useSession();
@@ -24,7 +24,25 @@ export default function Payments() {
         const paymentsData = await getPayments();
         const clientsData = await getClients();
         
-        setPayments(paymentsData || []);
+        console.log('支払いデータ取得:', paymentsData?.length || 0, '件');
+        console.log('クライアントデータ取得:', clientsData?.length || 0, '件');
+        
+        // 支払いデータを正規化（状態フィールドの値を統一）
+        const normalizedPayments = paymentsData.map(payment => {
+          // 状態の正規化
+          let status = payment.状態 || '';
+          
+          // 古い表記を新しい表記に変換
+          if (status === '入金済み') status = PAYMENT_STATUS.PAID;
+          else if (status === '未払い') status = PAYMENT_STATUS.UNPAID;
+          
+          return {
+            ...payment,
+            状態: status
+          };
+        });
+        
+        setPayments(normalizedPayments || []);
         setClients(clientsData || []);
       } catch (err) {
         console.error('データ取得エラー:', err);
