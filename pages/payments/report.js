@@ -420,3 +420,111 @@ export default function PaymentReport() {
               )}
             </div>
           </div>
+          
+          {/* クライアント別売上 */}
+          <div className="card mt-6">
+            <div className="card-header">
+              <h2 className="card-title">クライアント別売上（上位10件）</h2>
+            </div>
+            
+            {clientSummary.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">クライアント</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">件数</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">金額</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">割合</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {clientSummary.map((client, index) => (
+                      <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800">
+                          {client.name}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600">
+                          {client.count}件
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right font-medium">
+                          {formatCurrency(client.amount)}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
+                          {totalAmount > 0 ? Math.round((client.amount / totalAmount) * 100) : 0}%
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="p-6 text-center text-gray-500">
+                該当する期間のデータがありません
+              </div>
+            )}
+          </div>
+          
+          {/* 支払い詳細一覧 */}
+          <div className="card mt-6">
+            <div className="card-header border-b border-gray-100 pb-3">
+              <div className="flex flex-wrap items-center justify-between">
+                <h2 className="card-title">支払い一覧</h2>
+                <p className="text-sm text-gray-500">
+                  検索結果: {filteredPayments.length}件
+                </p>
+              </div>
+            </div>
+            
+            {filteredPayments.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">クライアント</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">項目</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">金額</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">入金日</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">アクション</th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredPayments.map((payment, index) => (
+                      <tr key={payment.支払いID || index} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-800">
+                          <Link href={`/clients/${payment.クライアントID}`} className="text-primary hover:text-primary-dark">
+                            {getClientName(payment.クライアントID)}
+                          </Link>
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-800">
+                          {payment.項目}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-800 text-right">
+                          {formatCurrency(payment.金額)}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
+                          {payment.入金日 ? new Date(payment.入金日).toLocaleDateString('ja-JP') : '-'}
+                        </td>
+                        <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
+                          <Link href={`/payments/${payment.支払いID}`} className="text-primary hover:text-primary-dark">
+                            詳細
+                          </Link>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="py-6 text-center text-gray-500">
+                該当する支払いデータがありません
+              </div>
+            )}
+          </div>
+        </>
+      )}
+    </Layout>
+  );
+}
+
+// サーバーサイドレンダリングを使用せず、クライアントサイドでデータを取得するように変更
