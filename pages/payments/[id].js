@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form';
 import Head from 'next/head';
 import Link from 'next/link';
 import Layout from '../../components/Layout';
+import PaymentEmailSection from '../../components/payments/PaymentEmailSection';
 import { fetchData, formatDate, formatCurrency, getStatusColorClass } from '../../lib/api-utils';
 import { PAYMENT_STATUS } from '../../lib/api-config';
 
@@ -547,6 +548,18 @@ export default function PaymentDetail() {
                   入金確認
                 </button>
               )}
+              
+              {/* メール送信セクション */}
+              <div className="mt-6">
+                <h3 className="text-sm font-medium text-gray-700 mb-2">メール送信</h3>
+                <PaymentEmailSection 
+                  payment={payment}
+                  disabled={isSubmitting}
+                  onSuccess={() => {
+                    setSuccessMessage('入金確認メールを送信しました');
+                  }}
+                />
+              </div>
             </div>
           </div>
         </div>

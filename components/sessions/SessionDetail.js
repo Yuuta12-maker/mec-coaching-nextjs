@@ -1,4 +1,6 @@
 import { formatDate } from '../../lib/utils';
+import { SessionConfirmationEmail } from '../email';
+
 
 // セッション詳細情報表示コンポーネント
 export default function SessionDetail({ sessionData, clientData }) {
@@ -216,6 +218,23 @@ export default function SessionDetail({ sessionData, clientData }) {
           <h3 className="text-lg font-medium text-gray-800 mb-2">セッションノート</h3>
           <div className="bg-gray-50 p-4 rounded-lg">
             <p className="text-gray-700 whitespace-pre-wrap">{sessionData.メモ}</p>
+          </div>
+        </div>
+      )}
+
+      {/* メール送信セクション */}
+      {sessionData && clientData && (
+        <div className="mt-6">
+          <h3 className="text-lg font-medium text-gray-800 mb-2">メール送信</h3>
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <SessionConfirmationEmail
+              sessionId={sessionData.セッションID}
+              clientId={clientData.クライアントID}
+              sessionData={sessionData}
+              onSuccess={() => {
+                alert('メールが送信されました！');
+              }}
+            />
           </div>
         </div>
       )}
