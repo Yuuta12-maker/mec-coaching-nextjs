@@ -15,7 +15,8 @@ async function handler(req, res) {
   }
 
   try {
-    const { sessionId, clientId } = req.body;
+    const { sessionId } = req.body;
+    let { clientId } = req.body;
 
     // パラメータチェック
     if (!sessionId && !clientId) {
