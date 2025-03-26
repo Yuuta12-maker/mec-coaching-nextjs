@@ -6,12 +6,20 @@ import Link from 'next/link';
 import Layout from '../../components/Layout';
 import { formatDate, isToday } from '../../lib/utils';
 import { SESSION_STATUS } from '../../lib/constants';
+import { Calendar, momentLocalizer } from 'react-big-calendar';
+import moment from 'moment';
+import 'moment/locale/ja';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+
+// momentの日本語ローカライズ設定
+moment.locale('ja');
+const localizer = momentLocalizer(moment);
 
 export default function SessionsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   
-  const [viewMode, setViewMode] = useState('list'); // 'list' or 'calendar'
+  const [viewMode, setViewMode] = useState('calendar'); // デフォルトをカレンダーに変更
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -126,6 +134,79 @@ export default function SessionsPage() {
       default:
         return 'bg-gray-100 text-gray-800';
     }
+  };
+  
+  // セッションステータスに応じたイベントの背景色を取得
+  const getEventStyle = (status) => {
+    switch (status) {
+      case SESSION_STATUS.SCHEDULED:
+      case '予定':
+        return { backgroundColor: '#dbeafe', color: '#1e40af', borderColor: '#93c5fd' }; // blue
+      case SESSION_STATUS.COMPLETED:
+      case '実施済み':
+      case '実施済':
+        return { backgroundColor: '#dcfce7', color: '#166534', borderColor: '#86efac' }; // green
+      case SESSION_STATUS.CANCELED:
+      case 'キャンセル':
+        return { backgroundColor: '#fee2e2', color: '#991b1b', borderColor: '#fca5a5' }; // red
+      case SESSION_STATUS.POSTPONED:
+      case '延期':
+        return { backgroundColor: '#fef9c3', color: '#854d0e', borderColor: '#fde047' }; // yellow
+      default:
+        return { backgroundColor: '#f3f4f6', color: '#1f2937', borderColor: '#d1d5db' }; // gray
+    }
+  };
+  
+  // セッションデータをカレンダーイベント形式に変換
+  const calendarEvents = sessions.map(session => {
+    const start = new Date(session.予定日時);
+    const end = new Date(start);
+    end.setMinutes(end.getMinutes() + 30); // デフォルトで30分のセッション
+    
+    return {
+      id: session.セッションID,
+      title: `${formatDate(session.予定日時, 'HH:mm')} ${session.クライアント名 || '不明なクライアント'} (${session.セッション種別 || '未設定'})`,
+      start,
+      end,
+      status: session.ステータス,
+      client: session.クライアント名,
+      sessionType: session.セッション種別,
+      resource: session
+    };
+  });
+  
+  // カレンダーのイベントスタイルをカスタマイズ
+  const eventStyleGetter = (event) => {
+    const style = getEventStyle(event.status);
+    return {
+      style: {
+        backgroundColor: style.backgroundColor,
+        color: style.color,
+        borderLeft: `4px solid ${style.borderColor}`,
+        borderRadius: '4px',
+        opacity: 0.9,
+        fontWeight: 500,
+        paddingLeft: '6px'
+      }
+    };
+  };
+  
+  // カレンダーのイベントクリック処理
+  const handleEventSelect = (event) => {
+    router.push(`/sessions/${event.id}`);
+  };
+  
+  // カレンダーの月変更時の処理
+  const handleNavigate = (date) => {
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    setFilter({ ...filter, month: `${year}-${month}` });
+  };
+  
+  // カレンダーの表示形式変更時の処理
+  const handleView = (newView) => {
+    // ビュー変更の処理をここに追加できます
+    console.log('カレンダービュー変更:', newView);
   };
 
   // ローディング表示
@@ -325,58 +406,207 @@ export default function SessionsPage() {
       {/* セッション一覧（カレンダー表示） */}
       {viewMode === 'calendar' && (
         <div className="bg-white rounded-lg shadow overflow-hidden">
-          <div className="p-6">
+          <div className="p-4">
             <h3 className="text-lg font-medium text-gray-800 mb-4">
               {filter.month ? formatDate(filter.month + '-01', 'yyyy年MM月') : ''}のセッション
             </h3>
             
             {sessions.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {sessions.map((session) => {
-                  const sessionDate = new Date(session.予定日時);
-                  const isSessionToday = isToday(sessionDate);
-                  
-                  return (
-                    <Link
-                      key={session.セッションID}
-                      href={`/sessions/${session.セッションID}`}
-                      className={`block p-4 border rounded-lg hover:shadow-md transition ${
-                        isSessionToday ? 'border-green-300 bg-green-50' : 'border-gray-200'
-                      }`}
-                    >
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="text-sm text-gray-500">
-                            {formatDate(session.予定日時, 'yyyy/MM/dd')}
-                            {isSessionToday && <span className="ml-1 text-green-600">（今日）</span>}
-                          </p>
-                          <p className="font-medium text-gray-900">
-                            {formatDate(session.予定日時, 'HH:mm')} - {session.セッション種別 || '種別未設定'}
-                          </p>
-                          <p className="mt-1">{session.クライアント名 || '不明なクライアント'}</p>
-                        </div>
-                        <span className={`px-2 py-1 text-xs leading-5 font-semibold rounded-full ${getStatusColor(session.ステータス)}`}>
-                          {session.ステータス || '未設定'}
-                        </span>
-                      </div>
-                      
-                      {session['Google Meet URL'] && (
-                        <div className="mt-2 text-sm text-[#c50502]">
-                          Google Meetリンクあり
-                        </div>
-                      )}
-                    </Link>
-                  );
-                })}
+              <div className="calendar-container" style={{ height: '700px' }}>
+                <Calendar
+                  localizer={localizer}
+                  events={calendarEvents}
+                  startAccessor="start"
+                  endAccessor="end"
+                  style={{ height: '100%' }}
+                  views={['month', 'week', 'day', 'agenda']}
+                  defaultView="month"
+                  defaultDate={filter.month ? new Date(filter.month + '-01') : new Date()}
+                  onNavigate={handleNavigate}
+                  onView={handleView}
+                  onSelectEvent={handleEventSelect}
+                  eventPropGetter={eventStyleGetter}
+                  messages={{
+                    today: '今日',
+                    previous: '前へ',
+                    next: '次へ',
+                    month: '月',
+                    week: '週',
+                    day: '日',
+                    agenda: '一覧',
+                    date: '日付',
+                    time: '時間',
+                    event: 'イベント',
+                    noEventsInRange: 'この期間のセッションはありません'
+                  }}
+                  formats={{
+                    monthHeaderFormat: 'YYYY年M月',
+                    weekdayFormat: 'dd',
+                    dayHeaderFormat: 'M月D日(ddd)',
+                    dayRangeHeaderFormat: ({ start, end }) => `${moment(start).format('YYYY年M月D日')} - ${moment(end).format('M月D日')}`,
+                    agendaHeaderFormat: ({ start, end }) => `${moment(start).format('YYYY年M月D日')} - ${moment(end).format('M月D日')}`,
+                    agendaDateFormat: 'M/D(ddd)',
+                    agendaTimeFormat: 'HH:mm',
+                    agendaTimeRangeFormat: ({ start, end }) => `${moment(start).format('HH:mm')} - ${moment(end).format('HH:mm')}`
+                  }}
+                  dayPropGetter={(date) => {
+                    // 今日の日付に特別なスタイルを適用
+                    if (isToday(date)) {
+                      return {
+                        className: 'today-cell',
+                        style: {
+                          backgroundColor: '#fef2f2',
+                        },
+                      };
+                    }
+                    return {};
+                  }}
+                />
               </div>
             ) : (
-              <div className="text-center text-gray-500">
+              <div className="text-center py-20 text-gray-500">
                 該当するセッションが見つかりません
               </div>
             )}
           </div>
         </div>
       )}
+      
+      {/* カレンダー用のカスタムCSS */}
+      <style jsx global>{`
+        /* react-big-calendarのカスタマイズ */
+        .rbc-toolbar {
+          margin-bottom: 1.5rem;
+          padding-bottom: 1rem;
+          border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .rbc-toolbar button {
+          color: #4b5563;
+          border: 1px solid #d1d5db;
+          border-radius: 0.375rem;
+          padding: 0.5rem 0.75rem;
+        }
+        
+        .rbc-toolbar button:hover,
+        .rbc-toolbar button:focus {
+          color: #1f2937;
+          background-color: #f3f4f6;
+          border-color: #9ca3af;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+        
+        .rbc-toolbar button.rbc-active {
+          background-color: #c50502 !important;
+          color: white;
+          border-color: #a00401;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .rbc-toolbar button.rbc-active:hover {
+          background-color: #a00401 !important;
+          border-color: #7e0200;
+        }
+        
+        .rbc-header {
+          padding: 0.75rem 0.5rem;
+          font-weight: 600;
+          font-size: 0.875rem;
+          color: #4b5563;
+          background-color: #f9fafb;
+          border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .rbc-header + .rbc-header {
+          border-left: 1px solid #e5e7eb;
+        }
+        
+        .rbc-off-range-bg {
+          background-color: #f9fafb;
+        }
+        
+        .rbc-date-cell {
+          padding: 0.25rem;
+          text-align: center;
+          font-size: 0.875rem;
+          color: #4b5563;
+        }
+        
+        .rbc-date-cell.rbc-now {
+          font-weight: 700;
+          color: #c50502;
+        }
+        
+        .rbc-event {
+          border-radius: 0.25rem;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+          padding: 0.25rem 0.5rem;
+          margin-bottom: 0.125rem;
+        }
+        
+        .rbc-day-slot .rbc-event {
+          border-radius: 0.25rem;
+          margin-right: 0.75rem;
+        }
+        
+        .rbc-day-slot .rbc-event-content {
+          font-size: 0.875rem;
+        }
+        
+        .rbc-agenda-view table.rbc-agenda-table {
+          border: 1px solid #e5e7eb;
+          border-radius: 0.5rem;
+          overflow: hidden;
+        }
+        
+        .rbc-agenda-view table.rbc-agenda-table thead {
+          background-color: #f9fafb;
+        }
+        
+        .rbc-agenda-view table.rbc-agenda-table thead > tr > th {
+          padding: 0.75rem 1rem;
+          border-bottom: 1px solid #e5e7eb;
+          font-weight: 600;
+          font-size: 0.875rem;
+          color: #4b5563;
+          text-transform: uppercase;
+        }
+        
+        .rbc-agenda-view table.rbc-agenda-table tbody > tr > td {
+          padding: 0.75rem 1rem;
+          border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .rbc-agenda-view table.rbc-agenda-table tbody > tr:hover {
+          background-color: #f9fafb;
+        }
+        
+        .rbc-time-view .rbc-time-header-content .rbc-header {
+          border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .rbc-time-view .rbc-time-header-content .rbc-allday-cell {
+          border-bottom: 1px solid #e5e7eb;
+        }
+        
+        .rbc-time-view .rbc-time-content {
+          border-top: 1px solid #e5e7eb;
+        }
+        
+        .rbc-time-view .rbc-time-content > * + * > * {
+          border-left: 1px solid #e5e7eb;
+        }
+        
+        .rbc-time-view .rbc-day-slot .rbc-time-slot {
+          border-top: 1px solid #f3f4f6;
+        }
+        
+        /* 今日の日付のスタイル */
+        .today-cell {
+          background-color: #fef2f2;
+          color: #c50502;
+        }
+      `}</style>
     </Layout>
   );
 }
