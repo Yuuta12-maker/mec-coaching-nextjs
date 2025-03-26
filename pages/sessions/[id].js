@@ -7,6 +7,7 @@ import Layout from '../../components/Layout';
 import SessionDetail from '../../components/sessions/SessionDetail';
 import SessionEditForm from '../../components/sessions/SessionEditForm';
 import { formatDate } from '../../lib/utils';
+import { SessionFollowUpEmail, TrialFollowUpEmail } from '../../components/email';
 
 export default function SessionPage() {
   const router = useRouter();
@@ -20,6 +21,9 @@ export default function SessionPage() {
   const [error, setError] = useState(null);
   const [statusUpdateLoading, setStatusUpdateLoading] = useState(false);
   const [showFollowUpEmail, setShowFollowUpEmail] = useState(false);
+  
+  // モーダル用の状態
+  const [showEmailModal, setShowEmailModal] = useState(false);
 
   // セッション情報を取得
   useEffect(() => {
@@ -41,6 +45,11 @@ export default function SessionPage() {
         const data = await response.json();
         setSessionData(data.session);
         setClientData(data.client);
+        
+        // セッションがすでに「実施済み」のステータスであれば、フォローアップメール表示フラグをON
+        if (data.session.ステータス === '実施済み') {
+          setShowFollowUpEmail(true);
+        }
       } catch (err) {
         console.error('セッションデータ取得エラー:', err);
         setError(err.message);
@@ -123,9 +132,10 @@ export default function SessionPage() {
       const result = await response.json();
       alert(result.message || 'ステータスを更新しました');
       
-      // トライアルセッションが実施済みになった場合、フォローアップメールセクションを表示
-      if (newStatus === '実施済み' && sessionData.セッション種別 === 'トライアル') {
+      // セッションが実施済みになった場合は、メールモーダルを表示
+      if (newStatus === '実施済み') {
         setShowFollowUpEmail(true);
+        setShowEmailModal(true);
       }
     } catch (err) {
       console.error('ステータス更新エラー:', err);
@@ -134,6 +144,11 @@ export default function SessionPage() {
     } finally {
       setStatusUpdateLoading(false);
     }
+  };
+
+  // エメールモーダルを閉じる
+  const closeEmailModal = () => {
+    setShowEmailModal(false);
   };
 
   // ローディング表示
@@ -270,6 +285,54 @@ export default function SessionPage() {
             </svg>
             {clientData.お名前}のクライアント詳細を表示
           </Link>
+        </div>
+      )}
+
+      {/* メールモーダル */}
+      {showEmailModal && sessionData && clientData && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+          <div className="relative p-5 border w-full max-w-3xl shadow-lg rounded-md bg-white mx-4">
+            <div className="flex justify-between items-center mb-4 border-b pb-3">
+              <h3 className="text-xl font-bold text-gray-800">
+                フォローアップメール
+              </h3>
+              <button
+                onClick={closeEmailModal}
+                className="text-gray-600 hover:text-gray-900"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="max-h-[70vh] overflow-y-auto p-2">
+              {sessionData.セッション種別 === 'トライアル' ? (
+                <TrialFollowUpEmail
+                  client={clientData}
+                  sessionData={sessionData}
+                  formUrl="https://docs.google.com/forms/d/1HNEkQx3ug5l9aPD3xnVVSpm0NIrhW1vHBT21iMYOlBU/edit"
+                  onSend={closeEmailModal}
+                />
+              ) : (
+                <SessionFollowUpEmail
+                  client={clientData}
+                  sessionData={sessionData}
+                  calendarUrl="https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ0ZzWoMRPfGQfS0SMQNDVJMbEZyuT-lLDwFRNwvSjLFn7OG7hBBYKgfHKy3QNqQXzlb8AOnL1Uw"
+                  onSend={closeEmailModal}
+                />
+              )}
+            </div>
+            
+            <div className="mt-4 border-t pt-3 flex justify-end">
+              <button
+                onClick={closeEmailModal}
+                className="px-4 py-2 bg-gray-300 hover:bg-gray-400 mr-2 rounded-md"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </Layout>
