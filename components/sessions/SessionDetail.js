@@ -1,5 +1,5 @@
 import { formatDate } from '../../lib/utils';
-import { SessionFollowUpEmail } from '../email';
+import { SessionFollowUpEmail, TrialFollowUpEmail } from '../email';
 
 
 // セッション詳細情報表示コンポーネント
@@ -227,17 +227,50 @@ export default function SessionDetail({ sessionData, clientData }) {
         <div className="mt-6">
           <h3 className="text-lg font-medium text-gray-800 mb-2">メール送信</h3>
           
-          {/* セッション後フォローアップメール */}
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <SessionFollowUpEmail
-              client={clientData}
-              sessionData={sessionData}
-              calendarUrl="https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ0ZzWoMRPfGQfS0SMQNDVJMbEZyuT-lLDwFRNwvSjLFn7OG7hBBYKgfHKy3QNqQXzlb8AOnL1Uw"
-              onSend={() => {
-                console.log('メール作成しました');
-              }}
-            />
-          </div>
+          {/* トライアルセッションの場合は継続案内メールを表示 */}
+          {sessionData.セッション種別 === 'トライアル' && sessionData.ステータス === '実施済み' && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="flex items-center mb-3">
+                <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-primary-light text-primary mr-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                  </svg>
+                </span>
+                <h4 className="font-medium text-gray-800">トライアル後継続案内</h4>
+              </div>
+              <TrialFollowUpEmail
+                client={clientData}
+                sessionData={sessionData}
+                formUrl="https://docs.google.com/forms/d/1HNEkQx3ug5l9aPD3xnVVSpm0NIrhW1vHBT21iMYOlBU/edit"
+                onSend={() => {
+                  console.log('メール作成しました');
+                }}
+              />
+            </div>
+          )}
+          
+          {/* 通常セッションの場合は次回予約案内メールを表示 */}
+          {(sessionData.セッション種別 !== 'トライアル' || sessionData.ステータス !== '実施済み') && (
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <div className="flex items-center mb-3">
+                <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-primary-light text-primary mr-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                  </svg>
+                </span>
+                <h4 className="font-medium text-gray-800">次回セッション予約のご案内</h4>
+              </div>
+              <SessionFollowUpEmail
+                client={clientData}
+                sessionData={sessionData}
+                calendarUrl="https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ0ZzWoMRPfGQfS0SMQNDVJMbEZyuT-lLDwFRNwvSjLFn7OG7hBBYKgfHKy3QNqQXzlb8AOnL1Uw"
+                onSend={() => {
+                  console.log('メール作成しました');
+                }}
+              />
+            </div>
+          )}
         </div>
       )}
     </div>
