@@ -3,7 +3,7 @@ import { SessionFollowUpEmail, TrialFollowUpEmail } from '../email';
 
 
 // セッション詳細情報表示コンポーネント
-export default function SessionDetail({ sessionData, clientData }) {
+export default function SessionDetail({ sessionData, clientData, showFollowUpEmail = false }) {
   if (!sessionData) {
     return (
       <div className="p-6 text-center text-gray-500">
@@ -228,7 +228,7 @@ export default function SessionDetail({ sessionData, clientData }) {
           <h3 className="text-lg font-medium text-gray-800 mb-2">メール送信</h3>
           
           {/* トライアルセッションの場合は継続案内メールを表示 */}
-          {sessionData.セッション種別 === 'トライアル' && sessionData.ステータス === '実施済み' && (
+          {sessionData.セッション種別 === 'トライアル' && sessionData.ステータス === '実施済み' && showFollowUpEmail && (
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-center mb-3">
                 <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-primary-light text-primary mr-2">
@@ -250,8 +250,26 @@ export default function SessionDetail({ sessionData, clientData }) {
             </div>
           )}
           
+          {/* トライアルセッションの場合で、まだセッション完了ボタンを押していない場合は案内を表示 */}
+          {sessionData.セッション種別 === 'トライアル' && sessionData.ステータス === '実施済み' && !showFollowUpEmail && (
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm text-yellow-700">
+                    トライアル後の継続案内メールを送信するには、ページ上部の<strong>「セッション完了」ボタン</strong>を押してセッションステータスを更新してください。
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+          
           {/* 通常セッションの場合は次回予約案内メールを表示 */}
-          {(sessionData.セッション種別 !== 'トライアル' || sessionData.ステータス !== '実施済み') && (
+          {sessionData.セッション種別 !== 'トライアル' && (
             <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-center mb-3">
                 <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-primary-light text-primary mr-2">

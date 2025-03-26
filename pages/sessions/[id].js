@@ -19,6 +19,7 @@ export default function SessionPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [statusUpdateLoading, setStatusUpdateLoading] = useState(false);
+  const [showFollowUpEmail, setShowFollowUpEmail] = useState(false);
 
   // セッション情報を取得
   useEffect(() => {
@@ -121,6 +122,11 @@ export default function SessionPage() {
       // 成功メッセージを表示
       const result = await response.json();
       alert(result.message || 'ステータスを更新しました');
+      
+      // トライアルセッションが実施済みになった場合、フォローアップメールセクションを表示
+      if (newStatus === '実施済み' && sessionData.セッション種別 === 'トライアル') {
+        setShowFollowUpEmail(true);
+      }
     } catch (err) {
       console.error('ステータス更新エラー:', err);
       setError(err.message);
@@ -236,6 +242,7 @@ export default function SessionPage() {
           <SessionDetail
             sessionData={sessionData}
             clientData={clientData}
+            showFollowUpEmail={showFollowUpEmail}
           />
         )}
       </div>
