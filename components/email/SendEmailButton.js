@@ -2,67 +2,54 @@ import { useState } from 'react';
 
 /**
  * メール送信ボタンコンポーネント
+ * Gmail（または標準メールクライアント）にテンプレート文章が記入された状態で表示します
+ * 
  * @param {Object} props - コンポーネントプロパティ
- * @param {string} props.apiEndpoint - 使用するAPIエンドポイント
- * @param {Object} props.data - 送信するデータ
+ * @param {string} props.to - 宛先メールアドレス
+ * @param {string} props.subject - 件名
+ * @param {string} props.body - メール本文
  * @param {string} props.buttonText - ボタンのテキスト
  * @param {string} props.buttonClass - ボタンのCSSクラス（オプション）
- * @param {string} props.loadingText - 送信中に表示するテキスト（オプション）
- * @param {Function} props.onSuccess - 成功時のコールバック（オプション）
- * @param {Function} props.onError - エラー時のコールバック（オプション）
+ * @param {Function} props.onClick - クリック時のコールバック（オプション）
  */
 export default function SendEmailButton({
-  apiEndpoint,
-  data,
-  buttonText,
+  to,
+  subject,
+  body,
+  buttonText = 'メールを送信',
   buttonClass = 'bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded',
-  loadingText = '送信中...',
-  onSuccess,
-  onError
+  onClick
 }) {
-  const [isSending, setIsSending] = useState(false);
   const [result, setResult] = useState(null);
 
-  const handleSendEmail = async () => {
-    setIsSending(true);
-    setResult(null);
-
+  const handleSendEmail = () => {
     try {
-      const response = await fetch(apiEndpoint, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || 'メール送信に失敗しました');
-      }
-
+      // subject と body をエンコード
+      const encodedSubject = encodeURIComponent(subject || '');
+      const encodedBody = encodeURIComponent(body || '');
+      
+      // mailto: URLを生成
+      const mailtoUrl = `mailto:${to}?subject=${encodedSubject}&body=${encodedBody}`;
+      
+      // 新しいウィンドウでmailtoリンクを開く
+      window.open(mailtoUrl, '_blank');
+      
       setResult({
         success: true,
-        message: result.message || 'メールを送信しました'
+        message: 'メールクライアントを開きました'
       });
-
-      if (onSuccess) {
-        onSuccess(result);
+      
+      // コールバック実行
+      if (onClick) {
+        onClick();
       }
     } catch (error) {
-      console.error('メール送信エラー:', error);
+      console.error('メールクライアント起動エラー:', error);
       
       setResult({
         success: false,
-        message: error.message || 'メール送信に失敗しました'
+        message: error.message || 'メールクライアントの起動に失敗しました'
       });
-
-      if (onError) {
-        onError(error);
-      }
-    } finally {
-      setIsSending(false);
     }
   };
 
@@ -70,11 +57,10 @@ export default function SendEmailButton({
     <div>
       <button
         onClick={handleSendEmail}
-        disabled={isSending}
         className={buttonClass}
         type="button"
       >
-        {isSending ? loadingText : buttonText}
+        {buttonText}
       </button>
       
       {result && (
