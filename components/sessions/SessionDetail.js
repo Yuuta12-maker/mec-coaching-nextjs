@@ -1,5 +1,5 @@
 import { formatDate } from '../../lib/utils';
-import { SessionConfirmationEmail, SessionFollowUpEmail } from '../email';
+import { SessionFollowUpEmail } from '../email';
 
 
 // セッション詳細情報表示コンポーネント
@@ -227,33 +227,17 @@ export default function SessionDetail({ sessionData, clientData }) {
         <div className="mt-6">
           <h3 className="text-lg font-medium text-gray-800 mb-2">メール送信</h3>
           
-          {/* セッション確認メール */}
-          <div className="bg-gray-50 p-4 rounded-lg mb-4">
-            <h4 className="font-medium text-gray-700 mb-2">セッション確認</h4>
-            <SessionConfirmationEmail
-              sessionId={sessionData.セッションID}
-              clientId={clientData.クライアントID}
+          {/* セッション後フォローアップメール */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <SessionFollowUpEmail
+              client={clientData}
               sessionData={sessionData}
-              onSuccess={() => {
-                alert('メールが送信されました！');
+              calendarUrl="https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ0ZzWoMRPfGQfS0SMQNDVJMbEZyuT-lLDwFRNwvSjLFn7OG7hBBYKgfHKy3QNqQXzlb8AOnL1Uw"
+              onSend={() => {
+                console.log('メール作成しました');
               }}
             />
           </div>
-          
-          {/* セッション後フォローアップメール - 新しいコンポーネント */}
-          {sessionData.ステータス === '実施済み' && (
-            <div className="bg-gray-50 p-4 rounded-lg">
-              <h4 className="font-medium text-gray-700 mb-2">次回セッション予約のご案内</h4>
-              <SessionFollowUpEmail
-                client={clientData}
-                sessionData={sessionData}
-                calendarUrl="https://calendar.google.com/calendar/u/0/appointments/schedules/AcZssZ0ZzWoMRPfGQfS0SMQNDVJMbEZyuT-lLDwFRNwvSjLFn7OG7hBBYKgfHKy3QNqQXzlb8AOnL1Uw"
-                onSend={() => {
-                  console.log('メール作成しました');
-                }}
-              />
-            </div>
-          )}
         </div>
       )}
     </div>
