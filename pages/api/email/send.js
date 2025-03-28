@@ -1,5 +1,5 @@
 import { sendEmail } from '../../../lib/email';
-import { apiHandler } from '../../../lib/api-middleware';
+import { withApiMiddleware } from '../../../lib/api-middleware';
 import logger from '../../../lib/logger';
 
 /**
@@ -66,4 +66,4 @@ async function handler(req, res) {
   }
 }
 
-export default apiHandler(handler);
+export default withApiMiddleware(handler);
