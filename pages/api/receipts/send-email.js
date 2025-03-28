@@ -3,7 +3,8 @@ import { authOptions } from '../auth/[...nextauth]';
 import { nanoid } from 'nanoid';
 import formidable from 'formidable';
 import nodemailer from 'nodemailer';
-import { createEmailLog } from '../../../lib/firebase/emailLogs';
+import moment from 'moment';
+import { addRow } from '../../../lib/sheets';
 
 export const config = {
   api: {
@@ -229,22 +230,39 @@ export default async function handler(req, res) {
 
     console.log('メール送信完了:', info.messageId);
 
-    // 送信ログを記録
-    const emailLog = await createEmailLog({
+    // メールログをGoogle Sheetsに記録
+    const emailLog = {
+      id: nanoid(),
       type: 'receipt',
+      sendDate: moment().format('YYYY-MM-DD HH:mm:ss'),
       recipientEmail: email,
       recipientName,
       subject: `【マインドエンジニアリング・コーチング】領収書 No.${receiptNumber}`,
       status: 'sent',
-      relatedId: data.clientId || null,
+      relatedId: data.clientId || '',
+      receiptNumber,
       createdBy: session.user.id || session.user.email,
-    });
+    };
+    
+    try {
+      await addRow('メールログ', emailLog);
+      console.log('メール送信ログ記録完了:', emailLog.id);
+    } catch (logError) {
+      console.error('メールログ記録エラー:', logError);
+      // メールログの記録失敗はクリティカルではないので続行
+    }
 
-    console.log('メール送信ログ記録完了:', emailLog.id);
-    res.status(200).json({ success: true, messageId: info.messageId, emailLog });
+    res.status(200).json({ 
+      success: true, 
+      messageId: info.messageId, 
+      emailLog 
+    });
     
   } catch (error) {
     console.error('Error sending email:', error);
-    res.status(500).json({ error: 'Failed to send email', details: error.message });
+    res.status(500).json({ 
+      error: 'Failed to send email', 
+      details: error.message 
+    });
   }
 }

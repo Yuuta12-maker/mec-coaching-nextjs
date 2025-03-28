@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import { useRouter } from 'next/router';
 import axios from 'axios';
 import moment from 'moment';
@@ -100,7 +99,7 @@ const ReceiptGenerator = ({ clients = [] }) => {
     }
   };
 
-  // PDF生成と保存
+  // PDF生成
   const generatePDF = async () => {
     try {
       setLoading(true);
@@ -109,6 +108,7 @@ const ReceiptGenerator = ({ clients = [] }) => {
         amount: formData.amount
       });
       
+      // PDFを生成（Blobとして受け取る）
       const response = await axios.post('/api/receipts/generate-pdf', formData, {
         responseType: 'blob',
       });
@@ -121,14 +121,22 @@ const ReceiptGenerator = ({ clients = [] }) => {
       // PDFをStateに保存
       setPdfBlob(response.data);
       
-      // 領収書レコードを保存
-      console.log('領収書レコード保存開始');
-      const saveResponse = await axios.post('/api/receipts/save-record', formData);
-      console.log('領収書レコード保存完了', saveResponse.data);
+      // メタデータをGoogle Sheetsに保存
+      try {
+        await axios.post('/api/receipts/save-metadata', formData);
+        console.log('領収書メタデータ保存完了');
+      } catch (metaError) {
+        console.error('メタデータ保存エラー:', metaError);
+        // メタデータ保存失敗はクリティカルではないのでポップアップはしない
+      }
       
       setLoading(false);
       // 成功メッセージを表示
       alert('領収書PDFを生成しました');
+      
+      // 自動的にダウンロードを開始（オプション）
+      downloadPDF();
+      
     } catch (error) {
       console.error('Error generating PDF:', error);
       setLoading(false);
@@ -144,6 +152,7 @@ const ReceiptGenerator = ({ clients = [] }) => {
       return;
     }
 
+    // ブラウザでダウンロード
     const url = window.URL.createObjectURL(pdfBlob);
     const link = document.createElement('a');
     link.href = url;
@@ -151,6 +160,9 @@ const ReceiptGenerator = ({ clients = [] }) => {
     document.body.appendChild(link);
     link.click();
     link.remove();
+    
+    // URLオブジェクトを解放（メモリリーク防止）
+    setTimeout(() => window.URL.revokeObjectURL(url), 100);
   };
 
   // メール送信
@@ -475,7 +487,7 @@ const ReceiptGenerator = ({ clients = [] }) => {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clipRule="evenodd" />
                 </svg>
-                PDF生成
+                PDF生成と保存
               </button>
               
               <button
@@ -487,7 +499,7 @@ const ReceiptGenerator = ({ clients = [] }) => {
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                   <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
                 </svg>
-                PDFをダウンロード
+                PDFを再ダウンロード
               </button>
               
               <button
