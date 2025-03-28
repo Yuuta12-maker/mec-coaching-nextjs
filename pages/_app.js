@@ -1,26 +1,26 @@
 import '../styles/globals.css';
 import { SessionProvider } from 'next-auth/react';
 import { useEffect } from 'react';
-import { initializeFirestore } from '../lib/firebase/init';
 
 function MyApp({ Component, pageProps: { session, ...pageProps } }) {
-  // アプリケーション起動時にFirebase初期化を行う
+  // Firestore初期化は不要になりました（ローカルストレージ方式に移行）
   useEffect(() => {
-    const setupFirebase = async () => {
+    // システム初期化処理（必要に応じて）
+    const setupApp = async () => {
       try {
         if (process.env.NODE_ENV === 'development') {
-          console.log('開発環境でのFirestore初期化を実行します...');
+          console.log('アプリケーション初期化中...');
         }
-        await initializeFirestore();
+        // Google Sheets API接続テストなどの処理があればここに
         if (process.env.NODE_ENV === 'development') {
-          console.log('Firestore初期化が完了しました');
+          console.log('アプリケーション初期化完了');
         }
       } catch (error) {
-        console.error('Firestore初期化エラー:', error);
+        console.error('アプリケーション初期化エラー:', error);
       }
     };
 
-    setupFirebase();
+    setupApp();
   }, []);
 
   return (

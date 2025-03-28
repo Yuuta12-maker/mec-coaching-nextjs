@@ -15,13 +15,27 @@ const nextConfig = {
     // 本番ビルド時に型チェックエラーがあってもビルドを失敗させない
     ignoreBuildErrors: true,
   },
-  webpack: (config, { isServer }) => {
-    // Firebase関連モジュールのビルドを無視（必要に応じて）
-    config.module.rules.push({
-      test: /firebase\.(js|ts)$|firebase\/.+\.(js|ts)$|googleDrive\.(js|ts)$/,
-      use: 'null-loader',
-      include: /lib/,
-    });
+  // 不要なモジュールを除外（Next.js標準方法）
+  webpack: (config, { dev, isServer }) => {
+    // 本番ビルドでのみFirebase関連モジュールを除外
+    if (!dev) {
+      // 既存のcondition配列を保存
+      const prevConditions = config.module.rules
+        .find((rule) => typeof rule.oneOf === 'object')
+        .oneOf.find((rule) => Array.isArray(rule.include))
+        .exclude;
+      
+      // 新しい除外ルールを追加
+      config.module.rules
+        .find((rule) => typeof rule.oneOf === 'object')
+        .oneOf.find((rule) => Array.isArray(rule.include))
+        .exclude = [
+          ...prevConditions,
+          /firebase\.(js|jsx|ts|tsx)$/,
+          /firebase\/.+\.(js|jsx|ts|tsx)$/,
+          /googleDrive\.(js|jsx|ts|tsx)$/
+        ];
+    }
     
     return config;
   },
