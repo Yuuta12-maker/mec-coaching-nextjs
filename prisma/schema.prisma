@@ -79,7 +79,7 @@ model Client {
   receipts        Receipt[]
 }
 
-model Session {
+model CoachingSession {
   id              String    @id @default(nanoid())
   sessionNumber   Int?
   sessionType     String

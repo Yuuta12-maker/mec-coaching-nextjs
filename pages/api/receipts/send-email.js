@@ -1,4 +1,5 @@
-import { getSession } from 'next-auth/react';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]";
 import { nanoid } from 'nanoid';
 import formidable from 'formidable';
 import nodemailer from 'nodemailer';
@@ -26,7 +27,10 @@ const getTransporter = () => {
 // フォームデータを解析する関数
 const parseForm = (req) => {
   return new Promise((resolve, reject) => {
-    const form = formidable({ multiples: false });
+    const form = new formidable.IncomingForm({
+      keepExtensions: true,
+      maxFileSize: 10 * 1024 * 1024, // 10MB
+    });
     
     form.parse(req, (err, fields, files) => {
       if (err) return reject(err);
@@ -42,7 +46,7 @@ export default async function handler(req, res) {
 
   try {
     // セッション確認（認証済みユーザーのみ許可）
-    const session = await getSession({ req });
+    const session = await getServerSession(req, res, authOptions);
     if (!session) {
       return res.status(401).json({ error: 'Unauthorized' });
     }

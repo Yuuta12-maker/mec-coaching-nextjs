@@ -147,13 +147,23 @@ const ReceiptGenerator = ({ clients = [] }) => {
       alert('まずPDFを生成してください');
       return;
     }
+    
+    if (!formData.email) {
+      alert('メールアドレスを入力してください');
+      return;
+    }
 
     try {
       setLoading(true);
       
       // PDFをFormDataに追加
       const formDataObj = new FormData();
-      formDataObj.append('pdf', pdfBlob, `receipt_${formData.receiptNumber}.pdf`);
+      
+      // ファイル名を指定して Blob を File オブジェクトに変換
+      const file = new File([pdfBlob], `receipt_${formData.receiptNumber}.pdf`, { 
+        type: 'application/pdf'
+      });
+      formDataObj.append('pdf', file);
       formDataObj.append('data', JSON.stringify(formData));
       
       await axios.post('/api/receipts/send-email', formDataObj, {
@@ -169,7 +179,7 @@ const ReceiptGenerator = ({ clients = [] }) => {
       console.error('Error sending email:', error);
       setLoading(false);
       // エラーメッセージを表示
-      alert('メール送信に失敗しました');
+      alert('メール送信に失敗しました: ' + error.message);
     }
   };
 

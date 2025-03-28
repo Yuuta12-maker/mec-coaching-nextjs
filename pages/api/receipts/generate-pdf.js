@@ -1,5 +1,6 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import { getSession } from 'next-auth/react';
+import { getServerSession } from "next-auth/next";
+import { authOptions } from "../auth/[...nextauth]";
 import { nanoid } from 'nanoid';
 import moment from 'moment';
 import prisma from '../../../lib/prisma';
@@ -14,7 +15,7 @@ export default async function handler(req, res) {
 
   try {
     // セッション確認（認証済みユーザーのみ許可）
-    const session = await getSession({ req });
+    const session = await getServerSession(req, res, authOptions);
     if (!session) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
