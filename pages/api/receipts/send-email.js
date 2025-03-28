@@ -45,16 +45,38 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('メール送信APIが呼び出されました');
     // セッション確認（認証済みユーザーのみ許可）
     const session = await getServerSession(req, res, authOptions);
     if (!session) {
+      console.error('認証されていないユーザーがアクセスしました');
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    console.log('認証済みユーザー:', session.user?.email);
 
     // フォームデータを解析
+    console.log('フォームデータ解析開始');
     const { fields, files } = await parseForm(req);
+    console.log('受信したフィールド:', Object.keys(fields));
+    console.log('受信したファイル:', Object.keys(files));
+    
     const data = JSON.parse(fields.data);
+    console.log('受信したデータの一部:', {
+      receiptNumber: data.receiptNumber,
+      recipientName: data.recipientName,
+      email: data.email
+    });
+    
     const pdfFile = files.pdf;
+    if (!pdfFile) {
+      console.error('PDFファイルがアップロードされていません');
+      return res.status(400).json({ error: 'PDF file is required' });
+    }
+    console.log('PDFファイル情報:', {
+      name: pdfFile.originalFilename,
+      size: pdfFile.size,
+      path: pdfFile.filepath
+    });
 
     // 必要なデータを取得
     const { 
@@ -74,6 +96,13 @@ export default async function handler(req, res) {
     const transporter = getTransporter();
 
     // メール送信
+    console.log('SMTP設定の確認:', {
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT,
+      secure: process.env.SMTP_SECURE,
+      user: process.env.SMTP_USER?.substring(0, 3) + '***',
+    });
+    
     const info = await transporter.sendMail({
       from: `"${process.env.EMAIL_SENDER_NAME}" <${process.env.EMAIL_SENDER}>`,
       to: email,

@@ -104,15 +104,27 @@ const ReceiptGenerator = ({ clients = [] }) => {
   const generatePDF = async () => {
     try {
       setLoading(true);
+      console.log('領収書PDF生成開始', {
+        name: formData.recipientName,
+        amount: formData.amount
+      });
+      
       const response = await axios.post('/api/receipts/generate-pdf', formData, {
         responseType: 'blob',
+      });
+      
+      console.log('PDF生成完了', {
+        size: response.data.size,
+        type: response.data.type
       });
       
       // PDFをStateに保存
       setPdfBlob(response.data);
       
       // 領収書レコードを保存
-      await axios.post('/api/receipts/save-record', formData);
+      console.log('領収書レコード保存開始');
+      const saveResponse = await axios.post('/api/receipts/save-record', formData);
+      console.log('領収書レコード保存完了', saveResponse.data);
       
       setLoading(false);
       // 成功メッセージを表示
@@ -121,7 +133,7 @@ const ReceiptGenerator = ({ clients = [] }) => {
       console.error('Error generating PDF:', error);
       setLoading(false);
       // エラーメッセージを表示
-      alert('PDF生成に失敗しました');
+      alert(`PDF生成に失敗しました: ${error.response?.data?.error || error.message}`);
     }
   };
 

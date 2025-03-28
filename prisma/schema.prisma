@@ -75,7 +75,7 @@ model Client {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   createdBy       String?
-  sessions        Session[]
+  sessions        CoachingSession[]
   receipts        Receipt[]
 }
 
