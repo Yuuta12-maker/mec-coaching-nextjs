@@ -1,38 +1,44 @@
-import { getSession } from 'next-auth/react';
-import prisma from '../../../lib/prisma';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]';
+import { getAllReceiptsData } from '../../../lib/googleDrive';
 
 export default async function handler(req, res) {
-  const session = await getSession({ req });
+  // 認証チェック
+  const session = await getServerSession(req, res, authOptions);
   if (!session) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  try {
-    switch (req.method) {
-      case 'GET':
-        // 全ての領収書を取得
-        const receipts = await prisma.receipt.findMany({
-          orderBy: {
-            createdAt: 'desc',
-          },
-          include: {
-            client: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
-        });
-        
-        return res.status(200).json(receipts);
-        
-      default:
-        return res.status(405).json({ error: 'Method not allowed' });
+  if (req.method === 'GET') {
+    try {
+      // クエリパラメータを取得
+      const { clientId } = req.query;
+      
+      // Google Driveからすべての領収書データを取得
+      const allReceipts = await getAllReceiptsData();
+      
+      // クライアントIDでフィルタリング（指定されている場合）
+      const receipts = clientId
+        ? allReceipts.filter(receipt => receipt.clientId === clientId)
+        : allReceipts;
+      
+      // 日付順にソート（新しい順）
+      receipts.sort((a, b) => {
+        const dateA = new Date(a.updatedAt || a._lastModified);
+        const dateB = new Date(b.updatedAt || b._lastModified);
+        return dateB - dateA;
+      });
+      
+      res.status(200).json(receipts);
+    } catch (error) {
+      console.error('API Error - GET /api/receipts:', error);
+      res.status(500).json({ 
+        error: 'Failed to fetch receipts', 
+        details: error.message 
+      });
     }
-  } catch (error) {
-    console.error('Error handling receipts:', error);
-    return res.status(500).json({ error: 'Internal server error', details: error.message });
+  } else {
+    res.setHeader('Allow', ['GET']);
+    res.status(405).json({ error: `Method ${req.method} Not Allowed` });
   }
 }

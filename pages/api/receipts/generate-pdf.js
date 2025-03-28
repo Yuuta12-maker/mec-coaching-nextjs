@@ -1,9 +1,8 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]";
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]';
 import { nanoid } from 'nanoid';
 import moment from 'moment';
-import prisma from '../../../lib/prisma';
 
 // コーポレートカラーを定義（#c50502）
 const CORPORATE_COLOR = { r: 0.773, g: 0.020, b: 0.008 };
@@ -14,11 +13,14 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('PDF生成APIが呼び出されました');
     // セッション確認（認証済みユーザーのみ許可）
     const session = await getServerSession(req, res, authOptions);
     if (!session) {
+      console.error('認証されていないユーザーがアクセスしました');
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    console.log('認証済みユーザー:', session.user?.email);
 
     const {
       receiptNumber,
@@ -35,6 +37,12 @@ export default async function handler(req, res) {
       notes,
       clientId
     } = req.body;
+
+    console.log('領収書データ:', { 
+      receiptNumber, 
+      recipientName,
+      amount,
+    });
 
     // PDF生成
     const pdfDoc = await PDFDocument.create();
@@ -376,29 +384,7 @@ export default async function handler(req, res) {
     // PDF作成完了
     const pdfBytes = await pdfDoc.save();
     
-    // 領収書データをDBに保存
-    const formattedIssueDate = moment(issueDate).format('YYYY-MM-DD');
-    const receipt = await prisma.receipt.create({
-      data: {
-        id: nanoid(),
-        receiptNumber,
-        issueDate: new Date(formattedIssueDate),
-        recipientName,
-        recipientAddress: recipientAddress || '',
-        description,
-        amount: parseFloat(amount),
-        taxRate: parseFloat(taxRate),
-        paymentMethod,
-        issuerName,
-        issuerTitle,
-        issuerAddress,
-        notes: notes || '',
-        clientId: clientId || null,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        createdBy: session.user.id,
-      }
-    });
+    console.log('PDF生成完了');
     
     // バイナリデータとしてPDFを返す
     res.setHeader('Content-Type', 'application/pdf');

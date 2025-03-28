@@ -1,9 +1,9 @@
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]";
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]';
 import { nanoid } from 'nanoid';
 import formidable from 'formidable';
 import nodemailer from 'nodemailer';
-import prisma from '../../../lib/prisma';
+import { createEmailLog } from '../../../lib/firebase/emailLogs';
 
 export const config = {
   api: {
@@ -95,7 +95,7 @@ export default async function handler(req, res) {
     // トランスポーターを取得
     const transporter = getTransporter();
 
-    // メール送信
+    // SMTP設定の確認
     console.log('SMTP設定の確認:', {
       host: process.env.SMTP_HOST,
       port: process.env.SMTP_PORT,
@@ -103,6 +103,7 @@ export default async function handler(req, res) {
       user: process.env.SMTP_USER?.substring(0, 3) + '***',
     });
     
+    // メール送信
     const info = await transporter.sendMail({
       from: `"${process.env.EMAIL_SENDER_NAME}" <${process.env.EMAIL_SENDER}>`,
       to: email,
@@ -226,21 +227,20 @@ export default async function handler(req, res) {
       ],
     });
 
+    console.log('メール送信完了:', info.messageId);
+
     // 送信ログを記録
-    const emailLog = await prisma.emailLog.create({
-      data: {
-        id: nanoid(),
-        type: 'receipt',
-        recipientEmail: email,
-        recipientName,
-        subject: `【マインドエンジニアリング・コーチング】領収書 No.${receiptNumber}`,
-        status: 'sent',
-        relatedId: data.clientId || null,
-        createdAt: new Date(),
-        createdBy: session.user.id,
-      },
+    const emailLog = await createEmailLog({
+      type: 'receipt',
+      recipientEmail: email,
+      recipientName,
+      subject: `【マインドエンジニアリング・コーチング】領収書 No.${receiptNumber}`,
+      status: 'sent',
+      relatedId: data.clientId || null,
+      createdBy: session.user.id || session.user.email,
     });
 
+    console.log('メール送信ログ記録完了:', emailLog.id);
     res.status(200).json({ success: true, messageId: info.messageId, emailLog });
     
   } catch (error) {

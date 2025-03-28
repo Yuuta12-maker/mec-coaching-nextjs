@@ -1,6 +1,6 @@
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
-import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]";
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../auth/[...nextauth]';
 import moment from 'moment';
 import { nanoid } from 'nanoid';
 import sharp from 'sharp';
@@ -14,11 +14,14 @@ export default async function handler(req, res) {
   }
 
   try {
+    console.log('プレビュー生成APIが呼び出されました');
     // セッション確認（認証済みユーザーのみ許可）
     const session = await getServerSession(req, res, authOptions);
     if (!session) {
+      console.error('認証されていないユーザーがアクセスしました');
       return res.status(401).json({ error: 'Unauthorized' });
     }
+    console.log('認証済みユーザー:', session.user?.email);
 
     const {
       receiptNumber,
