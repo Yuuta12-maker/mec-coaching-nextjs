@@ -1,8 +1,6 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]';
-import { nanoid } from 'nanoid';
-import moment from 'moment';
-import { saveJsonToGoogleDrive, findReceiptById } from '../../../lib/googleDrive';
+import { createReceipt, updateReceipt, getReceiptById } from '../../../lib/receipts';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -18,77 +16,44 @@ export default async function handler(req, res) {
     }
     console.log('認証済みユーザー:', session.user?.email);
 
-    const {
-      id, // 既存の領収書の場合
-      fileId, // Google Driveファイルの場合
-      receiptNumber,
-      issueDate,
-      recipientName,
-      recipientAddress,
-      email,
-      description,
-      amount,
-      taxRate,
-      paymentMethod,
-      issuerName,
-      issuerTitle,
-      issuerAddress,
-      notes,
-      clientId
-    } = req.body;
+    const { id } = req.body; // 既存の領収書IDがあれば使用
 
     console.log('領収書データ保存開始:', { 
-      receiptNumber, 
-      recipientName, 
-      amount
+      receiptNumber: req.body.receiptNumber, 
+      recipientName: req.body.recipientName, 
+      amount: req.body.amount
     });
 
-    // 日付のフォーマット
-    const formattedIssueDate = moment(issueDate).format('YYYY-MM-DD');
+    let receipt;
     
-    // 保存するレシートデータを構築
-    let receiptData = {
-      id: id || nanoid(),
-      receiptNumber,
-      issueDate: formattedIssueDate,
-      recipientName,
-      recipientAddress: recipientAddress || '',
-      email: email || '',
-      description,
-      amount: parseFloat(amount),
-      taxRate: parseFloat(taxRate),
-      paymentMethod,
-      issuerName,
-      issuerTitle,
-      issuerAddress,
-      notes: notes || '',
-      clientId: clientId || null,
-      createdBy: session.user.id || session.user.email,
-      createdAt: id ? undefined : new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    // ファイル名は「receipt-{ID}」の形式
-    const fileName = `receipt-${receiptData.id}`;
-    
-    // Google Driveにファイルを保存
-    const savedFileId = await saveJsonToGoogleDrive(
-      fileName, 
-      receiptData, 
-      fileId // 既存ファイルの場合はIDを指定、新規の場合はnull
-    );
-    
-    // 保存したファイルIDをレスポンスに含める
-    receiptData.fileId = savedFileId;
-
-    console.log('領収書データ保存完了:', {
-      id: receiptData.id,
-      fileId: savedFileId
-    });
+    // IDが指定されていれば更新、なければ新規作成
+    if (id) {
+      // 既存の領収書を取得
+      const existingReceipt = await getReceiptById(id);
+      if (!existingReceipt) {
+        return res.status(404).json({ error: 'Receipt not found' });
+      }
+      
+      // 既存の領収書を更新
+      receipt = await updateReceipt(id, {
+        ...req.body,
+        updatedBy: session.user.id || session.user.email
+      });
+      
+      console.log('領収書データ更新完了:', { id: receipt.id });
+    } else {
+      // 新しい領収書を作成
+      receipt = await createReceipt({
+        ...req.body,
+        createdBy: session.user.id || session.user.email
+      });
+      
+      console.log('新規領収書データ作成完了:', { id: receipt.id });
+    }
     
     res.status(200).json({ 
       success: true, 
-      receipt: receiptData 
+      receipt
     });
     
   } catch (error) {
