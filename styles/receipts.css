@@ -1,0 +1,100 @@
+/* 領収書関連のスタイル */
+
+/* Tailwind互換のAnt Designスタイル調整 */
+.receipt-generator .ant-input,
+.receipt-generator .ant-select,
+.receipt-generator .ant-btn,
+.receipt-generator .ant-picker {
+  @apply rounded;
+}
+
+.receipt-generator .ant-btn-primary {
+  @apply bg-primary text-white border-primary hover:bg-primary-dark;
+}
+
+.receipt-generator .ant-card {
+  @apply rounded-lg shadow;
+}
+
+.receipt-generator .ant-form-item-label > label {
+  @apply font-medium;
+}
+
+.receipt-generator .ant-select-selector {
+  @apply rounded border-gray-300 hover:border-primary;
+}
+
+/* 領収書プレビュー */
+.receipt-preview {
+  @apply border border-gray-200 rounded-lg p-4 bg-white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.receipt-preview img {
+  @apply w-full max-w-full h-auto;
+}
+
+/* メッセージスタイル */
+.receipt-message {
+  @apply p-4 mb-4 rounded-lg;
+}
+
+.receipt-message-success {
+  @apply bg-green-50 text-green-700 border-l-4 border-green-500;
+}
+
+.receipt-message-warning {
+  @apply bg-yellow-50 text-yellow-700 border-l-4 border-yellow-500;
+}
+
+.receipt-message-error {
+  @apply bg-red-50 text-red-700 border-l-4 border-red-500;
+}
+
+/* アクションボタン */
+.receipt-action-button {
+  @apply flex items-center justify-center px-4 py-2 rounded-lg transition-all duration-200;
+}
+
+.receipt-action-button-primary {
+  @apply bg-primary text-white hover:bg-primary-dark;
+}
+
+.receipt-action-button-secondary {
+  @apply bg-gray-100 text-gray-700 hover:bg-gray-200;
+}
+
+/* カスタムプライマリカラー（#c50502） */
+:root {
+  --primary-color: #c50502;
+  --primary-color-dark: #9c0401;
+  --primary-color-light: #ff6b69;
+}
+
+.bg-primary {
+  background-color: var(--primary-color) !important;
+}
+
+.bg-primary-dark {
+  background-color: var(--primary-color-dark) !important;
+}
+
+.bg-primary-light {
+  background-color: var(--primary-color-light) !important;
+}
+
+.text-primary {
+  color: var(--primary-color) !important;
+}
+
+.border-primary {
+  border-color: var(--primary-color) !important;
+}
+
+.hover\:bg-primary:hover {
+  background-color: var(--primary-color) !important;
+}
+
+.hover\:bg-primary-dark:hover {
+  background-color: var(--primary-color-dark) !important;
+}

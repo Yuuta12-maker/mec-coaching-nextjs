@@ -156,6 +156,12 @@ export default function Layout({ children, forceAccess = false }) {
                   <span className="text-xs mt-2 font-medium text-gray-800 dark:text-gray-200">支払い</span>
                 </div>
               </Link>
+              <Link href="/admin/receipts" className={`nav-item ${isActive('/admin/receipts') ? 'active' : ''}`}>
+                <div className="flex flex-col items-center py-3 px-6">
+                  <span className="material-icons text-gray-700 dark:text-gray-300">receipt</span>
+                  <span className="text-xs mt-2 font-medium text-gray-800 dark:text-gray-200">領収書</span>
+                </div>
+              </Link>
             </div>
           </div>
         </div>
@@ -222,6 +228,10 @@ export default function Layout({ children, forceAccess = false }) {
             <Link href="/payments" className={`mobile-nav-link ${isActive('/payments') ? 'active' : ''}`} onClick={toggleMobileMenu}>
               <span className="material-icons text-gray-700 dark:text-gray-300">payments</span>
               <span className="ml-3 text-gray-800 dark:text-gray-200">支払い</span>
+            </Link>
+            <Link href="/admin/receipts" className={`mobile-nav-link ${isActive('/admin/receipts') ? 'active' : ''}`} onClick={toggleMobileMenu}>
+              <span className="material-icons text-gray-700 dark:text-gray-300">receipt</span>
+              <span className="ml-3 text-gray-800 dark:text-gray-200">領収書</span>
             </Link>
           </nav>
           

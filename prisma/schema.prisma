@@ -1,0 +1,131 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?  @db.Text
+  access_token       String?  @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?  @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  role          String?   @default("user")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  accounts      Account[]
+  sessions      Session[]
+  clients       Client[]
+  receipts      Receipt[]
+  emailLogs     EmailLog[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Client {
+  id              String    @id @default(nanoid())
+  name            String
+  nameKana        String?
+  email           String?
+  phone           String?
+  address         String?
+  gender          String?
+  birthDate       DateTime?
+  notes           String?
+  isActive        Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  createdBy       String?
+  sessions        Session[]
+  receipts        Receipt[]
+}
+
+model Session {
+  id              String    @id @default(nanoid())
+  sessionNumber   Int?
+  sessionType     String
+  sessionDate     DateTime
+  status          String    @default("scheduled")
+  notes           String?
+  meetingUrl      String?
+  clientId        String
+  client          Client    @relation(fields: [clientId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model Receipt {
+  id               String    @id @default(nanoid())
+  receiptNumber    String    @unique
+  issueDate        DateTime
+  recipientName    String
+  recipientAddress String?
+  email            String?
+  description      String
+  amount           Float
+  taxRate          Float     @default(10)
+  paymentMethod    String
+  issuerName       String
+  issuerTitle      String
+  issuerAddress    String
+  notes            String?
+  clientId         String?
+  client           Client?   @relation(fields: [clientId], references: [id])
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  createdBy        String?
+  user             User?     @relation(fields: [createdBy], references: [id])
+}
+
+model EmailLog {
+  id              String    @id @default(nanoid())
+  type            String    // receipt, reminder, etc.
+  recipientEmail  String
+  recipientName   String?
+  subject         String
+  status          String    @default("sent")
+  error           String?
+  relatedId       String?   // clientId, receiptId, etc.
+  createdAt       DateTime  @default(now())
+  createdBy       String?
+  user            User?     @relation(fields: [createdBy], references: [id])
+}
