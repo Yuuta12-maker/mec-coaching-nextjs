@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]';
-import { getAllReceiptsData } from '../../../lib/googleDrive';
+import { getAllReceipts } from '../../../lib/receipts';
 
 export default async function handler(req, res) {
   // 認証チェック
@@ -14,8 +14,8 @@ export default async function handler(req, res) {
       // クエリパラメータを取得
       const { clientId } = req.query;
       
-      // Google Driveからすべての領収書データを取得
-      const allReceipts = await getAllReceiptsData();
+      // 領収書データを取得
+      const allReceipts = await getAllReceipts();
       
       // クライアントIDでフィルタリング（指定されている場合）
       const receipts = clientId
@@ -24,8 +24,8 @@ export default async function handler(req, res) {
       
       // 日付順にソート（新しい順）
       receipts.sort((a, b) => {
-        const dateA = new Date(a.updatedAt || a._lastModified);
-        const dateB = new Date(b.updatedAt || b._lastModified);
+        const dateA = new Date(a.updatedAt || a.createdAt);
+        const dateB = new Date(b.updatedAt || b.createdAt);
         return dateB - dateA;
       });
       

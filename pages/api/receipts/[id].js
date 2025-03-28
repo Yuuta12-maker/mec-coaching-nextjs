@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]';
-import { findReceiptById, saveJsonToGoogleDrive, deleteFileFromGoogleDrive } from '../../../lib/googleDrive';
+import { getReceiptById, updateReceipt, deleteReceipt } from '../../../lib/receipts';
 
 export default async function handler(req, res) {
   const { id } = req.query;
@@ -14,7 +14,7 @@ export default async function handler(req, res) {
     switch (req.method) {
       case 'GET':
         // 特定の領収書を取得
-        const receipt = await findReceiptById(id);
+        const receipt = await getReceiptById(id);
         
         if (!receipt) {
           return res.status(404).json({ error: 'Receipt not found' });
@@ -23,50 +23,28 @@ export default async function handler(req, res) {
         return res.status(200).json(receipt);
       
       case 'PUT':
-        // 既存の領収書データを取得
-        const existingReceipt = await findReceiptById(id);
-        
-        if (!existingReceipt) {
-          return res.status(404).json({ error: 'Receipt not found' });
+        // 領収書を更新
+        try {
+          const updatedReceipt = await updateReceipt(id, req.body);
+          return res.status(200).json(updatedReceipt);
+        } catch (updateError) {
+          if (updateError.message.includes('not found')) {
+            return res.status(404).json({ error: 'Receipt not found' });
+          }
+          throw updateError;
         }
-        
-        // データを更新
-        const updatedData = {
-          ...existingReceipt,
-          ...req.body,
-          id: id, // IDは常に保持
-          updatedAt: new Date().toISOString()
-        };
-        
-        // ファイル名は「receipt-{ID}」の形式を維持
-        const fileName = `receipt-${id}`;
-        
-        // Google Driveファイルを更新
-        const fileId = await saveJsonToGoogleDrive(
-          fileName,
-          updatedData,
-          existingReceipt.fileId // 更新するファイルのID
-        );
-        
-        return res.status(200).json({
-          ...updatedData,
-          fileId
-        });
       
       case 'DELETE':
-        // 削除する領収書を検索
-        const receiptToDelete = await findReceiptById(id);
-        
-        if (!receiptToDelete) {
-          return res.status(404).json({ error: 'Receipt not found' });
+        // 領収書を削除
+        try {
+          const result = await deleteReceipt(id);
+          return res.status(200).json(result);
+        } catch (deleteError) {
+          if (deleteError.message.includes('not found')) {
+            return res.status(404).json({ error: 'Receipt not found' });
+          }
+          throw deleteError;
         }
-        
-        // ファイルIDがある場合はGoogle Driveから削除
-        if (receiptToDelete.fileId) {
-          await deleteFileFromGoogleDrive(receiptToDelete.fileId);
-        }
-        
-        return res.status(200).json({ success: true });
       
       default:
         return res.status(405).json({ error: 'Method not allowed' });
