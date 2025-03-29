@@ -538,6 +538,28 @@ export default function PaymentDetail() {
                 請求書を生成
               </button>
               
+              {/* 領収書作成ボタン - 入金済みの場合のみ表示 */}
+              {payment.状態 === PAYMENT_STATUS.PAID && (
+                <Link
+                  href={{
+                    pathname: '/receipts/create',
+                    query: {
+                      receiptNum: `MEC-${new Date().getFullYear()}-${payment.支払いID.slice(-3)}`,
+                      date: payment.入金日 || formatDate(new Date(), 'yyyy-MM-dd'),
+                      clientName: client.お名前,
+                      clientAddress: client.ご住所 || '',
+                      amount: payment.金額.toString(),
+                      description: payment.項目,
+                      paymentMethod: '銀行振込'
+                    }
+                  }}
+                  className="btn btn-primary w-full flex items-center justify-center"
+                >
+                  <span className="material-icons mr-2">receipt</span>
+                  領収書を作成
+                </Link>
+              )}
+              
               {payment.状態 !== PAYMENT_STATUS.PAID && (
                 <button
                   className="btn btn-success w-full flex items-center justify-center"

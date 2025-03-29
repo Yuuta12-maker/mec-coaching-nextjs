@@ -132,11 +132,11 @@ export default function Dashboard({ weeklySessionsData, clientStatusData, client
                 <h3 className="font-medium text-gray-800">セッション登録</h3>
               </Link>
               
-              <Link href="/clients" className="card card-interactive flex flex-col items-center justify-center py-8">
-                <div className="bg-purple-50 rounded-full h-12 w-12 flex items-center justify-center mb-3">
-                  <span className="material-icons text-purple-500">groups</span>
+              <Link href="/receipts/create" className="card card-interactive flex flex-col items-center justify-center py-8">
+                <div className="bg-red-50 rounded-full h-12 w-12 flex items-center justify-center mb-3">
+                  <span className="material-icons text-red-500">receipt</span>
                 </div>
-                <h3 className="font-medium text-gray-800">クライアント一覧</h3>
+                <h3 className="font-medium text-gray-800">領収書作成</h3>
               </Link>
               
               <Link href="/sessions" className="card card-interactive flex flex-col items-center justify-center py-8">

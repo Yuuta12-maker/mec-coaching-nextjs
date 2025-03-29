@@ -41,6 +41,55 @@ export default function CreateReceiptPage() {
     includeStamp: true
   });
   
+  // URLクエリパラメータからデータを取得して設定
+  useEffect(() => {
+    if (router.isReady) {
+      const {
+        receiptNum,
+        date,
+        clientName,
+        clientAddress,
+        serviceType,
+        amount,
+        description,
+        paymentMethod
+      } = router.query;
+      
+      // クエリパラメータがある場合、フォームデータを更新
+      if (clientName || amount) {
+        const newFormData = { ...formData };
+        
+        if (receiptNum) newFormData.receiptNum = receiptNum;
+        if (date) newFormData.receiptDate = date;
+        if (clientName) newFormData.clientName = clientName;
+        if (clientAddress) newFormData.clientAddress = clientAddress;
+        
+        // サービス種別の設定
+        if (serviceType) {
+          newFormData.serviceType = serviceType;
+        } else if (amount) {
+          // 金額から自動判定
+          const amountNum = parseInt(amount, 10);
+          if (amountNum === 6000) {
+            newFormData.serviceType = 'trial';
+          } else if (amountNum === 214000) {
+            newFormData.serviceType = 'continuation';
+          } else if (amountNum === 220000) {
+            newFormData.serviceType = 'full';
+          } else {
+            newFormData.serviceType = 'custom';
+            newFormData.customAmount = amount;
+          }
+        }
+        
+        if (description) newFormData.customDescription = description;
+        if (paymentMethod) newFormData.paymentMethod = paymentMethod;
+        
+        setFormData(newFormData);
+      }
+    }
+  }, [router.isReady, router.query]);
+  
   // バリデーション状態
   const [showAlert, setShowAlert] = useState(false);
   

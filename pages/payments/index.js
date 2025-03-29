@@ -210,10 +210,28 @@ export default function Payments() {
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
                             {payment.入金日 ? new Date(payment.入金日).toLocaleDateString('ja-JP') : '-'}
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right">
-                            <Link href={`/payments/${payment.支払いID}`} className="text-primary hover:text-primary-dark mr-3">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-right flex justify-end gap-2">
+                            <Link href={`/payments/${payment.支払いID}`} className="text-primary hover:text-primary-dark">
                               詳細
                             </Link>
+                            {payment.状態 === PAYMENT_STATUS.PAID && (
+                              <Link 
+                                href={{
+                                  pathname: '/receipts/create',
+                                  query: {
+                                    receiptNum: `MEC-${new Date().getFullYear()}-${payment.支払いID.slice(-3)}`,
+                                    date: payment.入金日 || new Date().toISOString().split('T')[0],
+                                    clientName: getClientName(payment.クライアントID),
+                                    amount: payment.金額.toString(),
+                                    description: payment.項目,
+                                    paymentMethod: '銀行振込'
+                                  }
+                                }} 
+                                className="text-primary hover:text-primary-dark"
+                              >
+                                領収書
+                              </Link>
+                            )}
                             {payment.状態 !== PAYMENT_STATUS.PAID && (
                               <button
                                 className="text-green-600 hover:text-green-800"
