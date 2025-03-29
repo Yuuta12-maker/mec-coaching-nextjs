@@ -20,9 +20,17 @@ export default function Payments() {
         setIsLoading(true);
         setError(null);
         
-        // APIからデータを取得
-        const paymentsData = await getPayments();
-        const clientsData = await getClients();
+        // APIからデータを取得 - 直接フェッチしてクライアント追加情報を得る
+        const response = await fetch('/api/payments?includeClients=true');
+        
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || `API呼び出しエラー: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        const paymentsData = data.payments || [];
+        const clientsData = data.clients || [];
         
         console.log('支払いデータ取得:', paymentsData?.length || 0, '件');
         console.log('クライアントデータ取得:', clientsData?.length || 0, '件');
@@ -42,8 +50,15 @@ export default function Payments() {
           };
         });
         
+        // フロントエンドでクライアント情報を同期
         setPayments(normalizedPayments || []);
         setClients(clientsData || []);
+        
+        // デバッグ用に、クライアント名が正しく取得できているか確認
+        if (normalizedPayments.length > 0) {
+          console.log('支払い情報例:', normalizedPayments[0]);
+          console.log('クライアント名例:', normalizedPayments[0].クライアント名 || '不明');
+        }
       } catch (err) {
         console.error('データ取得エラー:', err);
         setError(err.message);
@@ -64,7 +79,13 @@ export default function Payments() {
   });
 
   // クライアントIDから名前を取得する関数
-  const getClientName = (clientId) => {
+  const getClientName = (clientId, payment) => {
+    // 支払いデータにクライアント名が含まれている場合はそれを使用
+    if (payment.クライアント名) {
+      return payment.クライアント名;
+    }
+    
+    // まとはクライアントリストから探す
     const client = clients.find(c => c.クライアントID === clientId);
     return client ? client.お名前 : '不明';
   };
@@ -190,7 +211,7 @@ export default function Payments() {
                         <tr key={payment.支払いID || index} className="hover:bg-gray-50">
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-800">
                             <Link href={`/clients/${payment.クライアントID}`} className="text-primary hover:text-primary-dark">
-                              {getClientName(payment.クライアントID)}
+                              {getClientName(payment.クライアントID, payment)}
                             </Link>
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-800">
@@ -221,7 +242,7 @@ export default function Payments() {
                                   query: {
                                     receiptNum: `MEC-${new Date().getFullYear()}-${payment.支払いID.slice(-3)}`,
                                     date: payment.入金日 || new Date().toISOString().split('T')[0],
-                                    clientName: getClientName(payment.クライアントID),
+                                    clientName: getClientName(payment.クライアントID, payment),
                                     amount: payment.金額.toString(),
                                     description: payment.項目,
                                     paymentMethod: '銀行振込'

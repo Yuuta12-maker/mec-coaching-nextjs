@@ -15,13 +15,34 @@ async function handler(req, res) {
     logger.info('支払い一覧の取得を開始');
     
     // クエリパラメータから各種フィルタリング条件を取得
-    const { status, clientId, startDate, endDate, sort } = req.query;
+    const { status, clientId, startDate, endDate, sort, includeClients } = req.query;
     
     // 支払いデータを取得
     const payments = await getSheetData(DB_TABLES.PAYMENT);
     
+    // クライアントデータも取得（クライアント情報を付加するため）
+    const clients = await getSheetData(DB_TABLES.CLIENT);
+    
+    // クライアント名をマッピング
+    const clientMap = {};
+    clients.forEach(client => {
+      if (client.クライアントID) {
+        clientMap[client.クライアントID] = client;
+      }
+    });
+    
+    // 支払いデータにクライアント情報を付加
+    const paymentsWithClientInfo = payments.map(payment => {
+      const clientInfo = clientMap[payment.クライアントID] || {};
+      return {
+        ...payment,
+        クライアント名: clientInfo.お名前 || '不明',
+        クライアント情報: clientInfo
+      };
+    });
+    
     // フィルタリング
-    let filteredPayments = [...payments];
+    let filteredPayments = [...paymentsWithClientInfo];
     
     // 状態でフィルタリング
     if (status) {
@@ -90,9 +111,10 @@ async function handler(req, res) {
     }
     
     logger.info(`支払い ${filteredPayments.length}件のデータを返却`);
-    // クライアント一覧と同じ形式でレスポンスを返す
+    // レスポンスを返す
     return res.status(200).json({
-      payments: filteredPayments
+      payments: filteredPayments,
+      clients: includeClients === 'true' ? clients : undefined
     });
     
   } catch (error) {

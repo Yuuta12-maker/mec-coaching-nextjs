@@ -33,8 +33,14 @@ async function getPaymentDetail(req, res) {
       logger.warn(`支払い ${id} に紐づくクライアントが見つかりません: クライアントID=${payment.クライアントID}`);
     }
     
+    // 支払いデータにクライアント名を追加
+    const enrichedPayment = {
+      ...payment,
+      クライアント名: client?.お名前 || '不明',
+    };
+    
     logger.info(`支払い詳細を返却: ID=${id}, クライアント=${client?.お名前 || '不明'}`);
-    return res.status(200).json({ payment, client });
+    return res.status(200).json({ payment: enrichedPayment, client });
     
   } catch (error) {
     logger.error(`支払い詳細取得エラー(ID=${id}):`, error);
