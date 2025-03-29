@@ -156,7 +156,13 @@ export default function Layout({ children, forceAccess = false }) {
                   <span className="text-xs mt-2 font-medium text-gray-800 dark:text-gray-200">支払い</span>
                 </div>
               </Link>
-              {/* 領収書機能は一時的に無効化 */}
+              {/* 領収書メニュー追加 */}
+              <Link href="/receipts/create" className={`nav-item ${isActive('/receipts') ? 'active' : ''}`}>
+                <div className="flex flex-col items-center py-3 px-6">
+                  <span className="material-icons text-gray-700 dark:text-gray-300">receipt</span>
+                  <span className="text-xs mt-2 font-medium text-gray-800 dark:text-gray-200">領収書</span>
+                </div>
+              </Link>
             </div>
           </div>
         </div>
@@ -224,7 +230,11 @@ export default function Layout({ children, forceAccess = false }) {
               <span className="material-icons text-gray-700 dark:text-gray-300">payments</span>
               <span className="ml-3 text-gray-800 dark:text-gray-200">支払い</span>
             </Link>
-            {/* 領収書機能は一時的に無効化 */}
+            {/* モバイルメニューにも領収書作成を追加 */}
+            <Link href="/receipts/create" className={`mobile-nav-link ${isActive('/receipts') ? 'active' : ''}`} onClick={toggleMobileMenu}>
+              <span className="material-icons text-gray-700 dark:text-gray-300">receipt</span>
+              <span className="ml-3 text-gray-800 dark:text-gray-200">領収書作成</span>
+            </Link>
           </nav>
           
           <div className="border-t border-gray-200 dark:border-slate-700 p-4 mt-auto">
