@@ -24,6 +24,8 @@ const ReservationSystem = () => {
     phone: '',
     remarks: ''
   });
+  // 予約成功データ
+  const [reservationData, setReservationData] = useState(null);
   
   // 今月のカレンダーデータを生成
   const generateCalendarData = () => {
@@ -81,11 +83,7 @@ const ReservationSystem = () => {
     
     try {
       // 本番環境ではAPIエンドポイントを呼び出す
-      // const response = await fetch(`/api/public/available-slots?date=${date.toISOString().split('T')[0]}`);
-      // const data = await response.json();
-      // return data.slots;
-      
-      // ダミーデータ（実際の実装では削除）
+      // ダミーデータ（本番環境ではAPI呼び出しに置き換え）
       await new Promise(resolve => setTimeout(resolve, 500)); // API呼び出しを模倣
       
       // サンプルデータ：平日10時〜17時、2時間おきに予約枠を作成
@@ -162,35 +160,33 @@ const ReservationSystem = () => {
     
     try {
       // 予約データの構築
-      const reservationData = {
+      const submitData = {
         クライアント名: userInfo.name,
         メールアドレス: userInfo.email,
         電話番号: userInfo.phone,
         予定日時: `${selectedDate.toISOString().split('T')[0]}T${selectedTimeSlot.time}:00`,
         セッション種別: 'トライアル',
-        セッション形式: sessionType === 'offline' ? SESSION_FORMAT.IN_PERSON : SESSION_FORMAT.ONLINE,
-        メモ: userInfo.remarks,
-        ステータス: '予定'
+        セッション形式: sessionType === 'offline' ? '対面' : 'オンライン',
+        メモ: userInfo.remarks
       };
       
-      // 本番環境ではAPIエンドポイントを呼び出す
-      // const response = await fetch('/api/public/reserve', {
-      //   method: 'POST',
-      //   headers: {
-      //     'Content-Type': 'application/json',
-      //   },
-      //   body: JSON.stringify(reservationData),
-      // });
+      // APIエンドポイントを呼び出す
+      const response = await fetch('/api/public/reserve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submitData),
+      });
       
-      // if (!response.ok) {
-      //   const errorData = await response.json();
-      //   throw new Error(errorData.error || '予約登録に失敗しました');
-      // }
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '予約登録に失敗しました');
+      }
       
-      // const data = await response.json();
-      
-      // ダミー処理（実際の実装では削除）
-      await new Promise(resolve => setTimeout(resolve, 800));
+      const data = await response.json();
+      console.log('予約成功:', data);
+      setReservationData(data);
       
       // 送信後、確認ステップへ
       handleNext();
@@ -543,6 +539,7 @@ const ReservationSystem = () => {
                   phone: '',
                   remarks: ''
                 });
+                setReservationData(null);
               }}
             >
               最初に戻る
