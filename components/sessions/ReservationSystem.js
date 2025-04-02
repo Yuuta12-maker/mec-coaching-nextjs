@@ -435,7 +435,6 @@ const ReservationSystem = () => {
             <h3 className="font-semibold mb-2">予約内容</h3>
             <p><span className="text-gray-600">日時：</span> {formatDate(selectedDate)} {selectedTimeSlot.time}</p>
             <p><span className="text-gray-600">セッション形式：</span> {sessionType === 'offline' ? '対面' : 'オンライン'}</p>
-            <p><span className="text-gray-600">料金：</span> {PRICE.TRIAL.toLocaleString()}円（税込）</p>
           </div>
           
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -521,33 +520,32 @@ const ReservationSystem = () => {
           <h2 className="text-2xl font-bold mb-2">予約が完了しました</h2>
           <p className="mb-6 text-gray-600">
             {formatDate(selectedDate)} {selectedTimeSlot.time}〜<br />
-            セッション形式: {sessionType === 'offline' ? '対面' : 'オンライン'}<br />
-            トライアルセッション (30分)
+            セッション形式: {sessionType === 'offline' ? '対面' : 'オンライン'}
           </p>
           <p className="mb-8">
-            予約内容の確認メールをお送りしました。<br />
-            当日のセッションをお待ちしております。
+          予約内容の確認メールをお送りしました。<br />
+          当日のセッションをお待ちしております。
           </p>
-          
+
           <div className="mt-6">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setStep(1);
-                setSelectedDate(null);
-                setSelectedTimeSlot(null);
-                setSessionType(null);
-                setUserInfo({
-                  name: '',
-                  email: '',
-                  phone: '',
-                  remarks: ''
-                });
-                setReservationData(null);
-              }}
-            >
-              最初に戻る
-            </Button>
+          <Button
+          variant="outline"
+          onClick={() => {
+          setStep(1);
+          setSelectedDate(null);
+          setSelectedTimeSlot(null);
+          setSessionType(null);
+          setUserInfo({
+          name: '',
+          email: '',
+          phone: '',
+          remarks: ''
+          });
+          setReservationData(null);
+          }}
+          >
+          最初に戻る
+          </Button>
           </div>
         </div>
       )}
