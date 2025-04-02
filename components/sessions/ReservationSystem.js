@@ -152,6 +152,15 @@ const ReservationSystem = () => {
     setStep(prev => prev - 1);
   };
   
+  // 日本時間に対応した日付文字列を生成（YYYY-MM-DD形式）
+  const formatDateForAPI = (date) => {
+    if (!date) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  
   // フォーム送信ハンドラー
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -159,16 +168,18 @@ const ReservationSystem = () => {
     setError(null);
     
     try {
-      // 予約データの構築
+      // 予約データの構築 - 日付をYYYY-MM-DD形式で直接構築（タイムゾーン対応）
       const submitData = {
         クライアント名: userInfo.name,
         メールアドレス: userInfo.email,
         電話番号: userInfo.phone,
-        予定日時: `${selectedDate.toISOString().split('T')[0]}T${selectedTimeSlot.time}:00`,
+        予定日時: `${formatDateForAPI(selectedDate)}T${selectedTimeSlot.time}:00`,
         セッション種別: 'トライアル',
         セッション形式: sessionType === 'offline' ? '対面' : 'オンライン',
         メモ: userInfo.remarks
       };
+      
+      console.log('送信データ:', submitData);
       
       // APIエンドポイントを呼び出す
       const response = await fetch('/api/public/reserve', {
