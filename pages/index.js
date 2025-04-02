@@ -153,11 +153,11 @@ export default function Dashboard({ weeklySessionsData, clientStatusData, client
                 <h3 className="font-medium text-gray-800">セッション登録</h3>
               </Link>
               
-              <Link href="/receipts/create" className="card card-interactive flex flex-col items-center justify-center py-8">
+              <Link href="/public/reserve" target="_blank" className="card card-interactive flex flex-col items-center justify-center py-8">
                 <div className="bg-red-50 rounded-full h-12 w-12 flex items-center justify-center mb-3">
-                  <span className="material-icons text-red-500">receipt</span>
+                  <span className="material-icons text-red-500">event_available</span>
                 </div>
-                <h3 className="font-medium text-gray-800">領収書作成</h3>
+                <h3 className="font-medium text-gray-800">予約フォームを開く</h3>
               </Link>
               
               <Link href="/sessions" className="card card-interactive flex flex-col items-center justify-center py-8">
@@ -178,9 +178,15 @@ export default function Dashboard({ weeklySessionsData, clientStatusData, client
                     <span className="material-icons mr-2 text-primary">date_range</span>
                     今週のセッション
                   </h2>
-                  <Link href="/sessions" className="text-sm text-primary hover:text-primary-dark flex items-center">
-                    すべて表示 <span className="material-icons ml-1 text-sm">arrow_forward</span>
-                  </Link>
+                  <div className="flex items-center">
+                    <Link href="/public/reserve" target="_blank" className="text-sm text-white bg-[#c50502] hover:bg-[#a00401] px-3 py-1 rounded-md mr-3 flex items-center">
+                      <span className="material-icons mr-1 text-sm">event_available</span>
+                      予約フォーム
+                    </Link>
+                    <Link href="/sessions" className="text-sm text-primary hover:text-primary-dark flex items-center">
+                      すべて表示 <span className="material-icons ml-1 text-sm">arrow_forward</span>
+                    </Link>
+                  </div>
                 </div>
                 
                 <div className="text-sm text-gray-600 mb-4">
@@ -333,6 +339,24 @@ export default function Dashboard({ weeklySessionsData, clientStatusData, client
                 <div className="mt-4 pt-4 border-t border-gray-100">
                   <Link href="/clients/new" className="btn btn-outline w-full">
                     新規クライアント登録
+                  </Link>
+                </div>
+              </div>
+              
+              {/* 予約フォームを開くボタン - サイドバーにも追加 */}
+              <div className="card">
+                <div className="card-header">
+                  <h2 className="card-title flex items-center">
+                    <span className="material-icons mr-2 text-primary">event_available</span>
+                    クライアント予約管理
+                  </h2>
+                </div>
+                
+                <div className="p-4 text-center">
+                  <p className="mb-4 text-sm text-gray-600">クライアントがオンラインで予約できるフォームを開きます。このリンクをクライアントと共有することもできます。</p>
+                  <Link href="/public/reserve" target="_blank" className="btn w-full bg-[#c50502] hover:bg-[#a00401] text-white">
+                    <span className="material-icons mr-2">event_available</span>
+                    予約フォームを開く
                   </Link>
                 </div>
               </div>
