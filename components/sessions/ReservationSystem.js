@@ -24,6 +24,8 @@ const ReservationSystem = () => {
     phone: '',
     remarks: ''
   });
+  // 選択したセッション種別
+  const [sessionTypeOption, setSessionTypeOption] = useState(null);
   // 予約成功データ
   const [reservationData, setReservationData] = useState(null);
   
@@ -134,6 +136,11 @@ const ReservationSystem = () => {
     setSessionType(type);
   };
   
+  // セッション種別選択ハンドラー
+  const handleSessionTypeOptionSelect = (type) => {
+    setSessionTypeOption(type);
+  };
+  
   // ユーザー情報更新ハンドラー
   const handleUserInfoChange = (e) => {
     const { name, value } = e.target;
@@ -174,7 +181,7 @@ const ReservationSystem = () => {
         メールアドレス: userInfo.email,
         電話番号: userInfo.phone,
         予定日時: `${formatDateForAPI(selectedDate)}T${selectedTimeSlot.time}:00`,
-        セッション種別: 'トライアル',
+        セッション種別: sessionTypeOption,
         セッション形式: sessionType === 'offline' ? '対面' : 'オンライン',
         メモ: userInfo.remarks
       };
@@ -413,12 +420,99 @@ const ReservationSystem = () => {
               </div>
             </div>
           )}
+
+          {/* セッション種別選択 */}
+          {sessionType && (
+            <div className="mt-6">
+              <h3 className="text-lg font-semibold mb-4">セッション種別を選択してください</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                <div
+                  className={`
+                    p-4 border rounded-lg cursor-pointer transition flex items-center
+                    ${sessionTypeOption === 'トライアル' 
+                      ? 'border-[#c50502] bg-red-50 text-[#c50502]' 
+                      : 'border-gray-300 hover:border-red-300 hover:bg-red-50'
+                    }
+                  `}
+                  onClick={() => handleSessionTypeOptionSelect('トライアル')}
+                >
+                  <span className="material-icons mr-3 text-[24px]">new_releases</span>
+                  <div className="font-semibold">トライアル</div>
+                </div>
+                <div
+                  className={`
+                    p-4 border rounded-lg cursor-pointer transition flex items-center
+                    ${sessionTypeOption === '継続（2回目）' 
+                      ? 'border-[#c50502] bg-red-50 text-[#c50502]' 
+                      : 'border-gray-300 hover:border-red-300 hover:bg-red-50'
+                    }
+                  `}
+                  onClick={() => handleSessionTypeOptionSelect('継続（2回目）')}
+                >
+                  <span className="material-icons mr-3 text-[24px]">looks_two</span>
+                  <div className="font-semibold">継続（2回目）</div>
+                </div>
+                <div
+                  className={`
+                    p-4 border rounded-lg cursor-pointer transition flex items-center
+                    ${sessionTypeOption === '継続（3回目）' 
+                      ? 'border-[#c50502] bg-red-50 text-[#c50502]' 
+                      : 'border-gray-300 hover:border-red-300 hover:bg-red-50'
+                    }
+                  `}
+                  onClick={() => handleSessionTypeOptionSelect('継続（3回目）')}
+                >
+                  <span className="material-icons mr-3 text-[24px]">looks_3</span>
+                  <div className="font-semibold">継続（3回目）</div>
+                </div>
+                <div
+                  className={`
+                    p-4 border rounded-lg cursor-pointer transition flex items-center
+                    ${sessionTypeOption === '継続（4回目）' 
+                      ? 'border-[#c50502] bg-red-50 text-[#c50502]' 
+                      : 'border-gray-300 hover:border-red-300 hover:bg-red-50'
+                    }
+                  `}
+                  onClick={() => handleSessionTypeOptionSelect('継続（4回目）')}
+                >
+                  <span className="material-icons mr-3 text-[24px]">looks_4</span>
+                  <div className="font-semibold">継続（4回目）</div>
+                </div>
+                <div
+                  className={`
+                    p-4 border rounded-lg cursor-pointer transition flex items-center
+                    ${sessionTypeOption === '継続（5回目）' 
+                      ? 'border-[#c50502] bg-red-50 text-[#c50502]' 
+                      : 'border-gray-300 hover:border-red-300 hover:bg-red-50'
+                    }
+                  `}
+                  onClick={() => handleSessionTypeOptionSelect('継続（5回目）')}
+                >
+                  <span className="material-icons mr-3 text-[24px]">looks_5</span>
+                  <div className="font-semibold">継続（5回目）</div>
+                </div>
+                <div
+                  className={`
+                    p-4 border rounded-lg cursor-pointer transition flex items-center
+                    ${sessionTypeOption === '継続（6回目）' 
+                      ? 'border-[#c50502] bg-red-50 text-[#c50502]' 
+                      : 'border-gray-300 hover:border-red-300 hover:bg-red-50'
+                    }
+                  `}
+                  onClick={() => handleSessionTypeOptionSelect('継続（6回目）')}
+                >
+                  <span className="material-icons mr-3 text-[24px]">looks_6</span>
+                  <div className="font-semibold">継続（6回目）</div>
+                </div>
+              </div>
+            </div>
+          )}
           
           <div className="mt-8 text-center">
             <Button
               variant="primary"
               size="lg"
-              disabled={!selectedDate || !selectedTimeSlot || !sessionType || isLoading}
+              disabled={!selectedDate || !selectedTimeSlot || !sessionType || !sessionTypeOption || isLoading}
               onClick={handleNext}
             >
               次へ進む
@@ -434,6 +528,7 @@ const ReservationSystem = () => {
             <h3 className="font-semibold mb-2">予約内容</h3>
             <p><span className="text-gray-600">日時：</span> {formatDate(selectedDate)} {selectedTimeSlot.time}</p>
             <p><span className="text-gray-600">セッション形式：</span> {sessionType === 'offline' ? '対面' : 'オンライン'}</p>
+            <p><span className="text-gray-600">セッション種別：</span> {sessionTypeOption}</p>
           </div>
           
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -519,7 +614,8 @@ const ReservationSystem = () => {
           <h2 className="text-2xl font-bold mb-2">予約が完了しました</h2>
           <p className="mb-6 text-gray-600">
             {formatDate(selectedDate)} {selectedTimeSlot.time}〜<br />
-            セッション形式: {sessionType === 'offline' ? '対面' : 'オンライン'}
+            セッション形式: {sessionType === 'offline' ? '対面' : 'オンライン'}<br />
+            セッション種別: {sessionTypeOption}
           </p>
           <p className="mb-8">
           予約内容の確認メールをお送りしました。<br />
