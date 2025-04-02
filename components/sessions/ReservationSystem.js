@@ -528,14 +528,7 @@ const ReservationSystem = () => {
             予約内容の確認メールをお送りしました。<br />
             当日のセッションをお待ちしております。
           </p>
-          <div className="bg-gray-50 p-4 mb-6 rounded-lg inline-block text-left">
-            <h3 className="font-semibold mb-2 text-[#c50502]">初回トライアルセッションについて</h3>
-            <p className="text-sm mb-2">
-              ・料金: {PRICE.TRIAL.toLocaleString()}円 (税込)<br />
-              ・セッション時間: 約30分<br />
-              ・お支払い方法の詳細は確認メールに記載されています
-            </p>
-          </div>
+          
           <div className="mt-6">
             <Button
               variant="outline"
