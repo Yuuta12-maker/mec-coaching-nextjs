@@ -9,6 +9,7 @@ export default function PublicReservationPage() {
         <title>セッション予約 | マインドエンジニアリング・コーチング</title>
         <meta name="description" content="マインドエンジニアリング・コーチングのセッション予約ページです。" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
       </Head>
       
       <div className="min-h-screen bg-gray-50">

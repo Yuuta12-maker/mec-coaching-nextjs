@@ -1,14 +1,4 @@
 import { useState, useEffect } from 'react';
-import { 
-  Calendar as CalendarIcon, 
-  ChevronLeft, 
-  ChevronRight, 
-  Clock, 
-  User, 
-  MapPin, 
-  Video, 
-  Check 
-} from 'lucide-react';
 import { Button } from '../ui';
 import { SESSION_FORMAT, PRICE } from '../../lib/constants';
 
@@ -91,7 +81,7 @@ const ReservationSystem = () => {
     
     try {
       // 本番環境ではAPIエンドポイントを呼び出す
-      // const response = await fetch(`/api/sessions/available-slots?date=${date.toISOString().split('T')[0]}`);
+      // const response = await fetch(`/api/public/available-slots?date=${date.toISOString().split('T')[0]}`);
       // const data = await response.json();
       // return data.slots;
       
@@ -184,7 +174,7 @@ const ReservationSystem = () => {
       };
       
       // 本番環境ではAPIエンドポイントを呼び出す
-      // const response = await fetch('/api/sessions/reserve', {
+      // const response = await fetch('/api/public/reserve', {
       //   method: 'POST',
       //   headers: {
       //     'Content-Type': 'application/json',
@@ -246,21 +236,21 @@ const ReservationSystem = () => {
       <div className="flex justify-between mb-8 px-4">
         <div className={`relative flex flex-col items-center ${step >= 1 ? 'text-gray-800' : 'text-gray-400'}`}>
           <div className={`w-10 h-10 flex items-center justify-center rounded-full border-2 ${step >= 1 ? 'border-[#c50502] bg-red-50' : 'border-gray-300'}`}>
-            <CalendarIcon size={20} className={step >= 1 ? 'text-[#c50502]' : 'text-gray-400'} />
+            <span className="material-icons text-[20px]">{step >= 1 ? 'event' : 'event_busy'}</span>
           </div>
           <div className="mt-2 text-sm font-medium">日程選択</div>
         </div>
         <div className={`grow border-t-2 self-start mt-5 ${step >= 2 ? 'border-[#c50502]' : 'border-gray-300'}`}></div>
         <div className={`relative flex flex-col items-center ${step >= 2 ? 'text-gray-800' : 'text-gray-400'}`}>
           <div className={`w-10 h-10 flex items-center justify-center rounded-full border-2 ${step >= 2 ? 'border-[#c50502] bg-red-50' : 'border-gray-300'}`}>
-            <User size={20} className={step >= 2 ? 'text-[#c50502]' : 'text-gray-400'} />
+            <span className="material-icons text-[20px]">{step >= 2 ? 'person' : 'person_off'}</span>
           </div>
           <div className="mt-2 text-sm font-medium">情報入力</div>
         </div>
         <div className={`grow border-t-2 self-start mt-5 ${step >= 3 ? 'border-[#c50502]' : 'border-gray-300'}`}></div>
         <div className={`relative flex flex-col items-center ${step >= 3 ? 'text-gray-800' : 'text-gray-400'}`}>
           <div className={`w-10 h-10 flex items-center justify-center rounded-full border-2 ${step >= 3 ? 'border-[#c50502] bg-red-50' : 'border-gray-300'}`}>
-            <Check size={20} className={step >= 3 ? 'text-[#c50502]' : 'text-gray-400'} />
+            <span className="material-icons text-[20px]">{step >= 3 ? 'check_circle' : 'radio_button_unchecked'}</span>
           </div>
           <div className="mt-2 text-sm font-medium">完了</div>
         </div>
@@ -285,7 +275,7 @@ const ReservationSystem = () => {
                 aria-label="前月"
                 disabled
               >
-                <ChevronLeft size={20} />
+                <span className="material-icons">chevron_left</span>
               </button>
               <h2 className="text-lg font-semibold">{currentMonthYear}</h2>
               <button 
@@ -293,7 +283,7 @@ const ReservationSystem = () => {
                 aria-label="翌月"
                 disabled
               >
-                <ChevronRight size={20} />
+                <span className="material-icons">chevron_right</span>
               </button>
             </div>
             
@@ -364,7 +354,7 @@ const ReservationSystem = () => {
                       `}
                       onClick={() => slot.available && handleTimeSlotSelect(slot)}
                     >
-                      <Clock size={18} className="inline-block mr-1" />
+                      <span className="material-icons inline-block mr-1 text-[18px]">schedule</span>
                       {slot.time}
                     </div>
                   ))}
@@ -392,7 +382,7 @@ const ReservationSystem = () => {
                   `}
                   onClick={() => handleSessionTypeSelect('offline')}
                 >
-                  <MapPin size={24} className="mr-3" />
+                  <span className="material-icons mr-3 text-[24px]">place</span>
                   <div>
                     <div className="font-semibold">対面セッション</div>
                     <div className="text-sm text-gray-500">松山市湊町2-5-2 リコオビル401</div>
@@ -408,7 +398,7 @@ const ReservationSystem = () => {
                   `}
                   onClick={() => handleSessionTypeSelect('online')}
                 >
-                  <Video size={24} className="mr-3" />
+                  <span className="material-icons mr-3 text-[24px]">videocam</span>
                   <div>
                     <div className="font-semibold">オンラインセッション</div>
                     <div className="text-sm text-gray-500">Google Meetを使用します</div>
@@ -519,7 +509,7 @@ const ReservationSystem = () => {
       {step === 3 && (
         <div className="text-center py-8">
           <div className="w-16 h-16 mx-auto bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <Check size={32} className="text-green-600" />
+            <span className="material-icons text-green-600 text-[32px]">check</span>
           </div>
           <h2 className="text-2xl font-bold mb-2">予約が完了しました</h2>
           <p className="mb-6 text-gray-600">
