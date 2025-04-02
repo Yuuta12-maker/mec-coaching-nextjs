@@ -392,7 +392,6 @@ const ReservationSystem = () => {
                   <span className="material-icons mr-3 text-[24px]">place</span>
                   <div>
                     <div className="font-semibold">対面セッション</div>
-                    <div className="text-sm text-gray-500">松山市湊町2-5-2 リコオビル401</div>
                   </div>
                 </div>
                 <div
