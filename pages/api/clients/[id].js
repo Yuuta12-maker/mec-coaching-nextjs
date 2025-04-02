@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../auth/[...nextauth]';
-import { findRowById, updateRow, getSheetData } from '../../../lib/sheets';
+import { findRowById, updateRowById, getSheetData } from '../../../lib/sheets';
 import logger from '../../../lib/logger';
 
 // シート名の定数
@@ -32,8 +32,45 @@ export default async function handler(req, res) {
           return res.status(404).json({ error: 'Client not found' });
         }
         
+        // withSessionsとwithPaymentsフラグの確認
+        const withSessions = req.query.withSessions === 'true';
+        const withPayments = req.query.withPayments === 'true';
+        
+        // レスポンスオブジェクトの準備
+        const response = { client };
+        
+        // セッション情報の取得（オプション）
+        if (withSessions) {
+          try {
+            // セッションシートから当該クライアントのセッションを取得
+            const allSessions = await getSheetData('セッション管理');
+            const clientSessions = allSessions.filter(session => 
+              session.クライアントID === id
+            );
+            response.sessions = clientSessions;
+          } catch (sessionError) {
+            logger.error(`セッションデータ取得エラー - クライアントID: ${id}:`, sessionError);
+            response.sessions = [];
+          }
+        }
+        
+        // 支払い情報の取得（オプション）
+        if (withPayments) {
+          try {
+            // 支払いシートから当該クライアントの支払い情報を取得
+            const allPayments = await getSheetData('支払い管理');
+            const clientPayments = allPayments.filter(payment => 
+              payment.クライアントID === id
+            );
+            response.payments = clientPayments;
+          } catch (paymentError) {
+            logger.error(`支払いデータ取得エラー - クライアントID: ${id}:`, paymentError);
+            response.payments = [];
+          }
+        }
+        
         logger.info(`クライアントID ${id} のデータ取得成功`);
-        res.status(200).json(client);
+        res.status(200).json(response);
       } catch (error) {
         logger.error(`クライアント取得エラー - ID:${id}:`, error);
         res.status(500).json({ 
@@ -56,7 +93,7 @@ export default async function handler(req, res) {
         }
         
         // クライアントデータ更新
-        await updateRow(CLIENT_SHEET, id, 'クライアントID', clientData);
+        await updateRowById(CLIENT_SHEET, id, clientData, 'クライアントID');
         
         // 更新後のデータを取得
         const updatedClient = await findRowById(CLIENT_SHEET, id, 'クライアントID');

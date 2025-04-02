@@ -40,9 +40,21 @@ export default function ClientPage() {
         }
         
         const data = await response.json();
-        setClient(data.client);
-        setSessions(data.sessions || []);
-        setPayments(data.payments || []);
+        // APIレスポンス構造の検証
+        if (data.client) {
+          // 新しいAPIレスポンス形式
+          setClient(data.client);
+          setSessions(data.sessions || []);
+          setPayments(data.payments || []);
+        } else if (data) {
+          // 旧APIレスポンス形式（後方互換性のため）
+          console.log('レガシーレスポンス形式を検出');
+          setClient(data);
+          setSessions([]);
+          setPayments([]);
+        } else {
+          throw new Error('無効なレスポンス形式');
+        }
       } catch (err) {
         console.error('クライアントデータ取得エラー:', err);
         setError(err.message);
