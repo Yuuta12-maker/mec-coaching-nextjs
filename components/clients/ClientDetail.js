@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { formatDate } from '../../lib/utils';
 import { getStatusColor } from '../../lib/clients';
+import { TrialScheduleEmail, PaymentInstructionEmail } from '../email';
 
 // クライアント詳細情報表示コンポーネント
 export default function ClientDetail({ client }) {
   const [isSending, setIsSending] = useState(false);
   const [emailStatus, setEmailStatus] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [activeEmailType, setActiveEmailType] = useState(null);
 
   // テンプレートタイプを定数として定義（lib/emailに依存せず）
   const EMAIL_TEMPLATES = {
@@ -13,7 +16,28 @@ export default function ClientDetail({ client }) {
     PAYMENT_INSTRUCTION: 'payment-instruction'
   };
 
-  // メール送信処理
+  // メール送信ボタンクリック時
+  const handleEmailButtonClick = (emailType) => {
+    setActiveEmailType(emailType);
+    setShowModal(true);
+  };
+
+  // モーダルを閉じる
+  const closeModal = () => {
+    setShowModal(false);
+    setActiveEmailType(null);
+  };
+
+  // メール送信後の処理
+  const handleEmailSent = () => {
+    setEmailStatus({
+      success: true,
+      message: 'メールを送信しました'
+    });
+    closeModal();
+  };
+
+  // 既存のメール送信処理（シンプルなメソッド - モーダルなしの場合用）
   const sendEmail = async (templateName) => {
     if (!client || !client.メールアドレス) {
       setEmailStatus({
@@ -230,14 +254,14 @@ export default function ClientDetail({ client }) {
           <h3 className="text-sm font-medium text-gray-500 mb-3">クライアント対応</h3>
           <div className="flex flex-wrap gap-3">
             <button
-              onClick={() => sendEmail(EMAIL_TEMPLATES.TRIAL_SCHEDULE_REQUEST)}
+              onClick={() => handleEmailButtonClick('trialSchedule')}
               disabled={isSending}
               className={`px-4 py-2 rounded-md border ${isSending ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'bg-[#c50502] hover:bg-[#a00401] text-white border-[#c50502]'}`}
             >
               トライアル日程調整メール送信
             </button>
             <button
-              onClick={() => sendEmail(EMAIL_TEMPLATES.PAYMENT_INSTRUCTION)}
+              onClick={() => handleEmailButtonClick('paymentInstruction')}
               disabled={isSending}
               className={`px-4 py-2 rounded-md border ${isSending ? 'bg-gray-100 text-gray-500 cursor-not-allowed' : 'border-[#c50502] text-[#c50502] hover:bg-red-50'}`}
             >
@@ -256,6 +280,43 @@ export default function ClientDetail({ client }) {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* メールモーダル */}
+      {showModal && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+          <div className="relative p-5 border w-full max-w-4xl shadow-lg rounded-md bg-white mx-4">
+            <div className="flex justify-between items-center mb-4 border-b pb-3">
+              <h3 className="text-xl font-bold text-gray-800">
+                {activeEmailType === 'trialSchedule' ? 'トライアル日程調整メール' : '支払い案内メール'}
+              </h3>
+              <button
+                onClick={closeModal}
+                className="text-gray-600 hover:text-gray-900"
+              >
+                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="max-h-[70vh] overflow-y-auto p-2">
+              {activeEmailType === 'trialSchedule' ? (
+                <TrialScheduleEmail
+                  client={client}
+                  onSend={handleEmailSent}
+                  onCancel={closeModal}
+                />
+              ) : (
+                <PaymentInstructionEmail
+                  client={client}
+                  onSend={handleEmailSent}
+                  onCancel={closeModal}
+                />
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>
