@@ -1,12 +1,17 @@
 import { useState } from 'react';
 import { formatDate } from '../../lib/utils';
 import { getStatusColor } from '../../lib/clients';
-import { EMAIL_TEMPLATES } from '../../lib/email';
 
 // クライアント詳細情報表示コンポーネント
 export default function ClientDetail({ client }) {
   const [isSending, setIsSending] = useState(false);
   const [emailStatus, setEmailStatus] = useState(null);
+
+  // テンプレートタイプを定数として定義（lib/emailに依存せず）
+  const EMAIL_TEMPLATES = {
+    TRIAL_SCHEDULE_REQUEST: 'trial-schedule-request',
+    PAYMENT_INSTRUCTION: 'payment-instruction'
+  };
 
   // メール送信処理
   const sendEmail = async (templateName) => {
@@ -22,32 +27,24 @@ export default function ClientDetail({ client }) {
     setEmailStatus(null);
 
     try {
+      // 日程候補の生成（クライアントサイドで実施）
+      const dateOptions = templateName === EMAIL_TEMPLATES.TRIAL_SCHEDULE_REQUEST 
+        ? generateDateOptions(3) 
+        : [];
+
       // 送信するデータの作成
       const emailData = {
         to: client.メールアドレス,
+        subject: templateName === EMAIL_TEMPLATES.TRIAL_SCHEDULE_REQUEST 
+          ? 'トライアルセッション日程調整のお知らせ'
+          : 'お支払いのご案内',
+        template: templateName,
         data: {
           name: client.お名前,
-        },
+          dateOptions: dateOptions,
+          paymentDue: 'セッション日の3日前まで'
+        }
       };
-
-      // テンプレートによって件名と追加データを設定
-      switch (templateName) {
-        case EMAIL_TEMPLATES.TRIAL_SCHEDULE_REQUEST:
-          emailData.subject = 'トライアルセッション日程調整のお知らせ';
-          // 直近3日分の候補日程を生成
-          const dateOptions = generateDateOptions(3);
-          emailData.data.dateOptions = dateOptions;
-          break;
-        case EMAIL_TEMPLATES.PAYMENT_INSTRUCTION:
-          emailData.subject = 'お支払いのご案内';
-          emailData.data.paymentDue = 'セッション日の3日前まで';
-          break;
-        default:
-          emailData.subject = 'マインドエンジニアリング・コーチングからのお知らせ';
-      }
-
-      // テンプレート設定
-      emailData.template = templateName;
 
       // APIを呼び出してメール送信
       const response = await fetch('/api/email/send', {
