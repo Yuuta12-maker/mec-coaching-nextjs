@@ -53,28 +53,49 @@ export default function Dashboard({ weeklySessionsData, clientStatusData, client
   };
   
   // 日付のフォーマット関数
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    const now = new Date();
-    now.setHours(0, 0, 0, 0);
+  const formatDate = (dateString, includeTime = false) => {
+    if (!dateString) return '';
     
-    const sessionDate = new Date(date);
-    sessionDate.setHours(0, 0, 0, 0);
-    
-    // 今日の場合は「今日」と表示
-    if (sessionDate.getTime() === now.getTime()) {
-      return '今日';
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return '';
+      
+      const now = new Date();
+      now.setHours(0, 0, 0, 0);
+      
+      const sessionDate = new Date(date);
+      sessionDate.setHours(0, 0, 0, 0);
+      
+      // 日付部分のフォーマット
+      let formattedDate;
+      
+      // 今日の場合は「今日」と表示
+      if (sessionDate.getTime() === now.getTime()) {
+        formattedDate = '今日';
+      }
+      // 明日の場合は「明日」と表示
+      else {
+        const tomorrow = new Date(now);
+        tomorrow.setDate(now.getDate() + 1);
+        if (sessionDate.getTime() === tomorrow.getTime()) {
+          formattedDate = '明日';
+        } else {
+          // それ以外は日付を表示
+          formattedDate = date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' });
+        }
+      }
+      
+      // 時間を含める場合
+      if (includeTime) {
+        const time = date.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+        return `${formattedDate} ${time}`;
+      }
+      
+      return formattedDate;
+    } catch (error) {
+      console.error('日付フォーマットエラー:', error);
+      return '';
     }
-    
-    // 明日の場合は「明日」と表示
-    const tomorrow = new Date(now);
-    tomorrow.setDate(now.getDate() + 1);
-    if (sessionDate.getTime() === tomorrow.getTime()) {
-      return '明日';
-    }
-    
-    // それ以外は日付を表示
-    return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric', weekday: 'short' });
   };
   
   // クライアントIDからクライアント情報を取得
@@ -267,6 +288,55 @@ export default function Dashboard({ weeklySessionsData, clientStatusData, client
                 </div>
               </div>
               
+              {/* 問い合わせ中のクライアント */}
+              <div className="card">
+                <div className="card-header">
+                  <h2 className="card-title flex items-center">
+                    <span className="material-icons mr-2 text-primary">contact_support</span>
+                    問い合わせ中
+                  </h2>
+                  <Link href="/clients" className="text-sm text-primary hover:text-primary-dark flex items-center">
+                    すべて表示 <span className="material-icons ml-1 text-sm">arrow_forward</span>
+                  </Link>
+                </div>
+                
+                {clients.filter(client => client.ステータス === '問い合わせ').length > 0 ? (
+                  <div className="divide-y divide-gray-100">
+                    {clients
+                      .filter(client => client.ステータス === '問い合わせ')
+                      .slice(0, 5) // 最大5件まで表示
+                      .map((client, index) => (
+                        <div key={index} className="py-3 flex justify-between items-center hover:bg-gray-50 px-2 rounded">
+                          <div className="flex items-center">
+                            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-orange-100 text-orange-600 flex items-center justify-center mr-3">
+                              <span className="font-medium">{client.お名前?.charAt(0) || '?'}</span>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-800">{client.お名前 || '名前なし'}</p>
+                              <p className="text-xs text-gray-500">{formatDate(client.タイムスタンプ, true) || '日時不明'}</p>
+                            </div>
+                          </div>
+                          <Link href={`/clients/${client.クライアントID}`} className="text-primary hover:text-primary-dark text-sm font-medium">
+                            詳細
+                          </Link>
+                        </div>
+                      ))
+                    }
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-6 text-gray-500 bg-gray-50 rounded-lg">
+                    <span className="material-icons text-3xl mb-2">check_circle</span>
+                    <p>問い合わせ中のクライアントはいません</p>
+                  </div>
+                )}
+                
+                <div className="mt-4 pt-4 border-t border-gray-100">
+                  <Link href="/clients/new" className="btn btn-outline w-full">
+                    新規クライアント登録
+                  </Link>
+                </div>
+              </div>
+              
               {/* 最近の支払い */}
               <div className="card">
                 <div className="card-header">
@@ -302,6 +372,16 @@ export async function getServerSideProps(context) {
   try {
     // クライアントデータを取得
     const clients = await getSheetData(config.SHEET_NAMES.CLIENT);
+    
+    // タイムスタンプに基づいて、新しい順に並び替え
+    clients.sort((a, b) => {
+      // タイムスタンプがない場合は最後にする
+      if (!a.タイムスタンプ) return 1;
+      if (!b.タイムスタンプ) return -1;
+      
+      // 降順（新しい順）
+      return new Date(b.タイムスタンプ) - new Date(a.タイムスタンプ);
+    });
     
     // 今週のセッションデータを取得（今日から一週間分）
     const allSessions = await getSheetData(config.SHEET_NAMES.SESSION);
