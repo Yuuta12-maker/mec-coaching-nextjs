@@ -1,6 +1,7 @@
 import { getSheetData, config } from '../../../lib/sheets';
 import logger from '../../../lib/logger';
 import { SESSION_STATUS } from '../../../lib/constants';
+import { getAvailableSlots as getCalendarSlots } from '../../../lib/google-calendar';
 
 export default async function handler(req, res) {
   // 公開APIなのでセッションチェックはスキップ
@@ -62,8 +63,9 @@ export default async function handler(req, res) {
       
     logger.info(`予約済みの時間帯: ${bookedSlots.join(', ')}`);
 
-    // 利用可能な時間枠を生成 (10時〜17時、2時間ごと)
-    const availableSlots = [];
+    // Google Calendarを使用するかチェック
+    const useGoogleCalendar = process.env.ENABLE_GOOGLE_CALENDAR === 'true';
+    let availableSlots = [];
     
     // 曜日によって利用可能時間を制限
     const day = targetDate.getDay();
@@ -77,26 +79,42 @@ export default async function handler(req, res) {
       });
     }
     
-    // 平日の予約可能時間帯（10時〜16時、2時間おき）
-    const timeSlots = [
-      { id: 1, hour: 10, min: '00' },
-      { id: 2, hour: 12, min: '00' },
-      { id: 3, hour: 14, min: '00' },
-      { id: 4, hour: 16, min: '00' },
-    ];
+    if (useGoogleCalendar) {
+      // Google Calendarから利用可能な時間枠を取得
+      try {
+        logger.info('Google Calendarから利用可能時間枠を取得中...');
+        availableSlots = await getCalendarSlots(targetDate);
+        logger.info(`Google Calendarからの時間枠取得成功: ${availableSlots.filter(s => s.available).length}件の利用可能枠`);
+      } catch (calendarError) {
+        logger.error('Google Calendarからの時間枠取得エラー:', calendarError);
+        // エラーの場合はフォールバックとして従来の方法を使用
+        useGoogleCalendar = false;
+      }
+    }
     
-    // 各時間枠について、予約済みかどうかを確認
-    timeSlots.forEach(slot => {
-      const timeStr = `${slot.hour}:${slot.min}`;
-      // 既に予約されているかチェック
-      const available = !bookedSlots.includes(timeStr);
+    // Google Calendarを使用しない場合や、エラーがあった場合は従来の方法で時間枠を生成
+    if (!useGoogleCalendar) {
+      // 平日の予約可能時間帯（10時〜16時、2時間おき）
+      const timeSlots = [
+        { id: 1, hour: 10, min: '00' },
+        { id: 2, hour: 12, min: '00' },
+        { id: 3, hour: 14, min: '00' },
+        { id: 4, hour: 16, min: '00' },
+      ];
       
-      availableSlots.push({
-        id: slot.id,
-        time: timeStr,
-        available
+      // 各時間枠について、予約済みかどうかを確認
+      availableSlots = timeSlots.map(slot => {
+        const timeStr = `${slot.hour}:${slot.min}`;
+        // 既に予約されているかチェック
+        const available = !bookedSlots.includes(timeStr);
+        
+        return {
+          id: slot.id,
+          time: timeStr,
+          available
+        };
       });
-    });
+    }
     
     logger.info(`利用可能な時間枠: ${availableSlots.filter(s => s.available).length}件`);
     logger.debug(`時間枠詳細: ${JSON.stringify(availableSlots)}`)

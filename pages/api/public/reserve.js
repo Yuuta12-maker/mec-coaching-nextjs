@@ -2,6 +2,7 @@ import { addRow, getSheetData, config } from '../../../lib/sheets';
 import logger from '../../../lib/logger';
 import { SESSION_STATUS } from '../../../lib/constants';
 import { sendEmail, EMAIL_TEMPLATES } from '../../../lib/email';
+import { addCalendarEvent } from '../../../lib/google-calendar';
 
 // セッション登録後のメール送信試行回数
 const MAX_EMAIL_RETRY = 3;
@@ -92,10 +93,115 @@ export default async function handler(req, res) {
     
     // GoogleMeet URLの生成（オンラインの場合）
     let meetUrl = '';
+    let calendarEventId = '';
+    const useGoogleCalendar = process.env.ENABLE_GOOGLE_CALENDAR === 'true';
+    
     if (data.セッション形式 === 'オンライン') {
-      const meetDate = new Date(data.予定日時);
-      const formattedDate = meetDate.toISOString().replace(/[^a-zA-Z0-9]/g, '');
-      meetUrl = `https://meet.google.com/${formattedDate}-mec-${randomStr}`;
+      // Google Calendar統合が有効な場合はカレンダーイベントを作成
+      if (useGoogleCalendar) {
+        try {
+          logger.info('Google Calendarイベント作成開始');
+          // 連絡先をアテンダーとして追加
+          const attendees = [
+            { email: data.メールアドレス, displayName: data.クライアント名 }
+          ];
+          
+          // イベントタイトルの生成
+          const eventTitle = `[マインドエンジニアリング・コーチング] ${data.セッション種別} ${data.クライアント名}様`;
+          
+          // イベント説明の生成
+          const eventDescription = `
+マインドエンジニアリング・コーチング ${data.セッション種別}
+
+お名前: ${data.クライアント名}
+メールアドレス: ${data.メールアドレス}
+電話番号: ${data.電話番号}
+セッション形式: ${data.セッション形式}
+${data.メモ ? `メモ: ${data.メモ}` : ''}
+
+セッションID: ${sessionId}
+クライアントID: ${clientId}
+          `;
+          
+          // Google Calendarイベントの作成
+          const calendarEvent = await addCalendarEvent({
+            summary: eventTitle,
+            description: eventDescription,
+            startTime: data.予定日時,
+            duration: 30, // 30分セッション
+            attendees: attendees,
+            createMeet: true, // Google Meetリンクを自動生成
+          });
+          
+          // 作成されたGoogle Meet URLを取得
+          if (calendarEvent.conferenceData && 
+              calendarEvent.conferenceData.entryPoints && 
+              calendarEvent.conferenceData.entryPoints.length > 0) {
+            const meetEntryPoint = calendarEvent.conferenceData.entryPoints.find(ep => ep.entryPointType === 'video');
+            if (meetEntryPoint) {
+              meetUrl = meetEntryPoint.uri;
+              logger.info(`Google Meet URL生成成功: ${meetUrl}`);
+            }
+          }
+          
+          // カレンダーイベントIDを保存
+          calendarEventId = calendarEvent.id;
+          logger.info(`カレンダーイベント作成成功: ${calendarEventId}`);
+          
+        } catch (calendarError) {
+          logger.error('Google Calendarイベント作成エラー:', calendarError);
+          // フォールバックとして従来のMeet URL生成方法を使用
+          const meetDate = new Date(data.予定日時);
+          const formattedDate = meetDate.toISOString().replace(/[^a-zA-Z0-9]/g, '');
+          meetUrl = `https://meet.google.com/${formattedDate}-mec-${randomStr}`;
+        }
+      } else {
+        // Google Calendar統合が無効な場合は従来のMeet URL生成方法を使用
+        const meetDate = new Date(data.予定日時);
+        const formattedDate = meetDate.toISOString().replace(/[^a-zA-Z0-9]/g, '');
+        meetUrl = `https://meet.google.com/${formattedDate}-mec-${randomStr}`;
+      }
+    } else {
+      // 対面セッションでもGoogle Calendar統合が有効な場合はカレンダーイベントを作成
+      if (useGoogleCalendar) {
+        try {
+          logger.info('対面セッション用のGoogle Calendarイベント作成開始');
+          
+          // イベントタイトルの生成
+          const eventTitle = `[マインドエンジニアリング・コーチング] ${data.セッション種別} ${data.クライアント名}様 (対面)`;
+          
+          // イベント説明の生成
+          const eventDescription = `
+マインドエンジニアリング・コーチング ${data.セッション種別} (対面)
+
+お名前: ${data.クライアント名}
+メールアドレス: ${data.メールアドレス}
+電話番号: ${data.電話番号}
+${data.メモ ? `メモ: ${data.メモ}` : ''}
+
+セッションID: ${sessionId}
+クライアントID: ${clientId}
+          `;
+          
+          // Google Calendarイベントの作成 (対面なのでMeetリンクは作成しない)
+          const calendarEvent = await addCalendarEvent({
+            summary: eventTitle,
+            description: eventDescription,
+            startTime: data.予定日時,
+            duration: 30, // 30分セッション
+            location: 'マインドエンジニアリング・コーチング 松山オフィス', // オフィス住所を設定する
+            createMeet: false, // 対面なのでMeetリンクは不要
+          });
+          
+          // カレンダーイベントIDを保存
+          calendarEventId = calendarEvent.id;
+          logger.info(`対面セッションのカレンダーイベント作成成功: ${calendarEventId}`);
+          
+        } catch (calendarError) {
+          logger.error('対面セッションのGoogle Calendarイベント作成エラー:', calendarError);
+          // エラーがあっても予約プロセスは続行
+        }
+      }
     }
     
     // セッション情報の登録
@@ -107,6 +213,7 @@ export default async function handler(req, res) {
       セッション種別: data.セッション種別,
       セッション形式: data.セッション形式,
       'Google Meet URL': meetUrl,
+      'Google Calendar ID': calendarEventId || '',
       ステータス: SESSION_STATUS.SCHEDULED,
       メモ: data.メモ || '',
       登録日時: new Date().toISOString()
@@ -214,7 +321,9 @@ export default async function handler(req, res) {
       message: 'セッションを予約しました',
       sessionId,
       clientId,
-      meetUrl
+      meetUrl,
+      calendarEventId,
+      calendarEnabled: useGoogleCalendar
     });
   } catch (error) {
     logger.error('セッション予約エラー:', error);
