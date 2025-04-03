@@ -184,11 +184,6 @@ const ReservationSystem = () => {
       
       console.log('送信データ:', submitData);
       
-      // ユーザーに処理中であることを表示
-      setIsLoading(true);
-      document.getElementById('submitBtn').disabled = true;
-      document.getElementById('submitBtn').innerHTML = '予約処理中...';
-      
       // APIエンドポイントを呼び出す
       const response = await fetch('/api/public/reserve', {
         method: 'POST',
@@ -207,22 +202,17 @@ const ReservationSystem = () => {
       console.log('予約成功:', data);
       setReservationData(data);
       
-      // 送信後、確認ステップへ
+      // 少しの遅延を入れてメール送信が完了する時間を与える
       setTimeout(() => {
+        // 送信後、確認ステップへ
         setIsLoading(false);
-        document.getElementById('submitBtn').disabled = false;
-        document.getElementById('submitBtn').innerHTML = '予約を確定する';
         handleNext();
-      }, 1500); // 少しの遅延を入れてメール送信が完了する時間を与える
+      }, 1500);
       
     } catch (err) {
       console.error('予約エラー:', err);
       setError(err.message || '予約処理中にエラーが発生しました。もう一度お試しください。');
       setIsLoading(false);
-      if (document.getElementById('submitBtn')) {
-        document.getElementById('submitBtn').disabled = false;
-        document.getElementById('submitBtn').innerHTML = '予約を確定する';
-      }
     }
   };
   
@@ -609,12 +599,12 @@ const ReservationSystem = () => {
                 戻る
               </Button>
               <Button
-                id="submitBtn"
                 variant="primary"
                 type="submit"
                 isLoading={isLoading}
+                disabled={isLoading}
               >
-                予約を確定する
+                {isLoading ? '処理中...' : '予約を確定する'}
               </Button>
             </div>
           </form>
