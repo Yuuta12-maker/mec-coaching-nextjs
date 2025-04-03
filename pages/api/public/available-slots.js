@@ -64,7 +64,7 @@ export default async function handler(req, res) {
     logger.info(`予約済みの時間帯: ${bookedSlots.join(', ')}`);
 
     // Google Calendarを使用するかチェック
-    const useGoogleCalendar = process.env.ENABLE_GOOGLE_CALENDAR === 'true';
+    let useGoogleCalendar = process.env.ENABLE_GOOGLE_CALENDAR === 'true';
     let availableSlots = [];
     
     // 曜日によって利用可能時間を制限
