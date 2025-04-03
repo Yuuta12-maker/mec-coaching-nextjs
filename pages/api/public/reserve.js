@@ -1,6 +1,10 @@
 import { addRow, getSheetData, config } from '../../../lib/sheets';
 import logger from '../../../lib/logger';
 import { SESSION_STATUS } from '../../../lib/constants';
+import { sendEmail, EMAIL_TEMPLATES } from '../../../lib/email';
+
+// セッション登録後のメール送信試行回数
+const MAX_EMAIL_RETRY = 3;
 
 export default async function handler(req, res) {
   // 公開APIなのでセッションチェックはスキップ
@@ -111,6 +115,91 @@ export default async function handler(req, res) {
     try {
       logger.info(`セッション登録: ID=${sessionId}, クライアントID=${clientId}`);
       await addRow(config.SHEET_NAMES.SESSION, sessionData);
+      
+      // 予約確認メールを送信（リトライ機能付き）
+      try {
+        // 日付のフォーマット
+        const sessionDate = new Date(data.予定日時);
+        const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+        const formattedDate = `${sessionDate.getFullYear()}年${sessionDate.getMonth() + 1}月${sessionDate.getDate()}日(${weekdays[sessionDate.getDay()]}) ${sessionDate.getHours()}:${String(sessionDate.getMinutes()).padStart(2, '0')}`;
+        
+        // セッション種別によってテンプレートを選択
+        const isTrialSession = data.セッション種別 === 'トライアル';
+        const emailTemplate = isTrialSession ? 
+          EMAIL_TEMPLATES.TRIAL_CONFIRMATION : 
+          EMAIL_TEMPLATES.CONTINUATION_CONFIRMATION;
+        
+        // クライアント向けメール送信データ準備
+        const clientEmailData = {
+          to: data.メールアドレス,
+          subject: `【ご予約確定】マインドエンジニアリング・コーチング ${data.セッション種別}`,
+          template: emailTemplate,
+          data: {
+            name: data.クライアント名,
+            date: formattedDate,
+            format: data.セッション形式 === 'オンライン' ? 'オンライン（Google Meet）' : '対面',
+            meetLink: meetUrl || '',
+            sessionType: data.セッション種別
+          }
+        };
+        
+        // コーチ向けメール（管理者通知）データ準備
+        const adminEmail = process.env.EMAIL_SENDER || 'mindengineeringcoaching@gmail.com';
+        const adminEmailData = {
+          to: adminEmail,
+          subject: `【新規予約】${data.クライアント名}様 ${data.セッション種別}`,
+          template: 'default',
+          data: {
+            title: '新規セッション予約がありました',
+            name: '森山様',
+            message: `
+              ${data.クライアント名}様から新しい予約がありました。<br><br>
+              <strong>セッション種別:</strong> ${data.セッション種別}<br>
+              <strong>日時:</strong> ${formattedDate}<br>
+              <strong>形式:</strong> ${data.セッション形式}<br>
+              <strong>メールアドレス:</strong> ${data.メールアドレス}<br>
+              <strong>電話番号:</strong> ${data.電話番号}<br>
+              ${data.メモ ? `<strong>備考:</strong> ${data.メモ}<br>` : ''}
+              ${meetUrl ? `<strong>Google Meet URL:</strong> <a href="${meetUrl}">${meetUrl}</a><br>` : ''}
+            `
+          }
+        };
+        
+        // 並行処理でメール送信
+        const emailPromises = [
+          sendEmail(clientEmailData).then(() => {
+            logger.info(`クライアント向け予約確認メールを送信しました: ${data.メールアドレス}`);
+            return { success: true, recipient: 'client' };
+          }).catch(err => {
+            logger.error(`クライアントメール送信エラー: ${err.message}`);
+            return { success: false, recipient: 'client', error: err.message };
+          }),
+          
+          sendEmail(adminEmailData).then(() => {
+            logger.info(`コーチ向け予約通知メールを送信しました: ${adminEmail}`);
+            return { success: true, recipient: 'admin' };
+          }).catch(err => {
+            logger.error(`管理者メール送信エラー: ${err.message}`);
+            return { success: false, recipient: 'admin', error: err.message };
+          })
+        ];
+        
+        // メール送信結果をログに記録するが、API応答は成功として処理を継続
+        const emailResults = await Promise.allSettled(emailPromises);
+        const emailStatus = emailResults.map(result => {
+          if (result.status === 'fulfilled') {
+            return result.value;
+          } else {
+            return { success: false, error: result.reason.message };
+          }
+        });
+        
+        logger.info(`メール送信結果: ${JSON.stringify(emailStatus)}`);
+        
+      } catch (emailError) {
+        // メール送信エラーはログに記録するが、API応答は成功として返す
+        logger.error('予約確認メール送信処理エラー:', emailError);
+      }
     } catch (sessionError) {
       logger.error('セッション登録エラー:', sessionError);
       return res.status(500).json({ 

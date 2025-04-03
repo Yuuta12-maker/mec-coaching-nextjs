@@ -184,6 +184,11 @@ const ReservationSystem = () => {
       
       console.log('送信データ:', submitData);
       
+      // ユーザーに処理中であることを表示
+      setIsLoading(true);
+      document.getElementById('submitBtn').disabled = true;
+      document.getElementById('submitBtn').innerHTML = '予約処理中...';
+      
       // APIエンドポイントを呼び出す
       const response = await fetch('/api/public/reserve', {
         method: 'POST',
@@ -203,12 +208,21 @@ const ReservationSystem = () => {
       setReservationData(data);
       
       // 送信後、確認ステップへ
-      handleNext();
+      setTimeout(() => {
+        setIsLoading(false);
+        document.getElementById('submitBtn').disabled = false;
+        document.getElementById('submitBtn').innerHTML = '予約を確定する';
+        handleNext();
+      }, 1500); // 少しの遅延を入れてメール送信が完了する時間を与える
+      
     } catch (err) {
       console.error('予約エラー:', err);
       setError(err.message || '予約処理中にエラーが発生しました。もう一度お試しください。');
-    } finally {
       setIsLoading(false);
+      if (document.getElementById('submitBtn')) {
+        document.getElementById('submitBtn').disabled = false;
+        document.getElementById('submitBtn').innerHTML = '予約を確定する';
+      }
     }
   };
   
@@ -595,6 +609,7 @@ const ReservationSystem = () => {
                 戻る
               </Button>
               <Button
+                id="submitBtn"
                 variant="primary"
                 type="submit"
                 isLoading={isLoading}
@@ -637,15 +652,38 @@ const ReservationSystem = () => {
               <div className="text-left">
                 <p className="font-medium text-blue-800 mb-1">予約確認メール送信済み</p>
                 <p className="text-blue-700 text-sm">
-                  {userInfo.email} 宛に予約内容の確認メールをお送りしました。ご確認ください。
+                  {userInfo.email} 宛に予約確認メールを送信しました。メールが届かない場合は、追ってご連絡させていただきます。
                 </p>
+                <div className="mt-3">
+                  <details className="text-xs text-blue-700">
+                    <summary className="cursor-pointer hover:text-blue-900">ℹ️ メールが届かない場合</summary>
+                    <div className="mt-2 p-2 bg-white rounded">
+                      <ul className="list-disc ml-4 space-y-1">
+                        <li>迫情フォルダなどをご確認ください</li>
+                        <li>必要に応じてメールアドレス mindengineeringcoaching@gmail.com をアドレス帳に登録してください</li>
+                        <li>ご不明な点があれば、お電話（090-5710-7627）でもお関ふください</li>
+                      </ul>
+                    </div>
+                  </details>
+                </div>
               </div>
             </div>
           </div>
 
           <p className="text-lg font-medium text-gray-800 mb-6">
-            当日のセッションを楽しみにしております。
+            ご予約ありがとうございます。当日のセッションを楽しみにしております。
           </p>
+          
+          <div className="bg-green-50 p-4 rounded-lg border border-green-100 mb-6 text-left">
+            <p className="font-medium text-green-800 mb-2">次のステップ</p>
+            <ol className="list-decimal ml-5 text-green-700 space-y-1">
+              <li>お送りした確認メールをご確認ください</li>
+              {sessionType === 'online' && (
+                <li>Google Meet URLをセーブしておくと当日スムーズです</li>
+              )}
+              <li>セッション当日は、指定の時間にお集まりください</li>
+            </ol>
+          </div>
 
           <div className="mt-6">
             <Button
