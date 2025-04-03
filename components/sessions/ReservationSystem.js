@@ -76,7 +76,7 @@ const ReservationSystem = () => {
     '7月', '8月', '9月', '10月', '11月', '12月'
   ];
   
-  // 利用可能な時間枠を取得（APIから取得する想定）
+  // 利用可能な時間枠を取得（APIから取得）
   const fetchAvailableTimeSlots = async (date) => {
     if (!date) return [];
     
@@ -84,21 +84,17 @@ const ReservationSystem = () => {
     setError(null);
     
     try {
-      // 本番環境ではAPIエンドポイントを呼び出す
-      // ダミーデータ（本番環境ではAPI呼び出しに置き換え）
-      await new Promise(resolve => setTimeout(resolve, 500)); // API呼び出しを模倣
+      // APIエンドポイントを呼び出して実際の予約状況を取得
+      const formattedDate = formatDateForAPI(date);
+      const response = await fetch(`/api/public/available-slots?date=${formattedDate}`);
       
-      // サンプルデータ：平日10時〜17時、2時間おきに予約枠を作成
-      const day = date.getDay();
-      // 土日は予約不可と仮定
-      if (day === 0 || day === 6) return [];
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '時間枠の取得に失敗しました');
+      }
       
-      return [
-        { id: 1, time: '10:00', available: true },
-        { id: 2, time: '12:00', available: true },
-        { id: 3, time: '14:00', available: true },
-        { id: 4, time: '16:00', available: true },
-      ];
+      const data = await response.json();
+      return data.slots;
     } catch (err) {
       console.error('時間枠取得エラー:', err);
       setError('予約可能な時間枠の取得に失敗しました。');
@@ -368,8 +364,13 @@ const ReservationSystem = () => {
                       `}
                       onClick={() => slot.available && handleTimeSlotSelect(slot)}
                     >
-                      <span className="material-icons inline-block mr-1 text-[18px]">schedule</span>
+                      <span className="material-icons inline-block mr-1 text-[18px]">
+                        {slot.available ? 'schedule' : 'event_busy'}
+                      </span>
                       {slot.time}
+                      {!slot.available && (
+                        <div className="text-xs mt-1 text-red-500">予約済み</div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -612,35 +613,60 @@ const ReservationSystem = () => {
             <span className="material-icons text-green-600 text-[32px]">check</span>
           </div>
           <h2 className="text-2xl font-bold mb-2">予約が完了しました</h2>
-          <p className="mb-6 text-gray-600">
-            {formatDate(selectedDate)} {selectedTimeSlot.time}〜<br />
-            セッション形式: {sessionType === 'offline' ? '対面' : 'オンライン'}<br />
-            セッション種別: {sessionTypeOption}
-          </p>
-          <p className="mb-8">
-          予約内容の確認メールをお送りしました。<br />
-          当日のセッションをお待ちしております。
+          
+          <div className="max-w-md mx-auto bg-green-50 p-4 rounded-lg border border-green-100 mb-6">
+            <h3 className="font-semibold text-green-800 mb-2">予約内容</h3>
+            <div className="text-left text-green-700">
+              <p><span className="font-medium">日時:</span> {formatDate(selectedDate)} {selectedTimeSlot.time}</p>
+              <p><span className="font-medium">お名前:</span> {userInfo.name} 様</p>
+              <p><span className="font-medium">セッション形式:</span> {sessionType === 'offline' ? '対面' : 'オンライン'}</p>
+              <p><span className="font-medium">セッション種別:</span> {sessionTypeOption}</p>
+              {reservationData && reservationData.meetUrl && (
+                <p className="mt-2"><span className="font-medium">Google Meet URL:</span> 
+                  <a href={reservationData.meetUrl} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline break-all">
+                    {reservationData.meetUrl}
+                  </a>
+                </p>
+              )}
+            </div>
+          </div>
+          
+          <div className="bg-blue-50 p-4 rounded-lg border border-blue-100 mb-8">
+            <div className="flex items-start">
+              <span className="material-icons text-blue-600 mr-2 mt-1">mail</span>
+              <div className="text-left">
+                <p className="font-medium text-blue-800 mb-1">予約確認メール送信済み</p>
+                <p className="text-blue-700 text-sm">
+                  {userInfo.email} 宛に予約内容の確認メールをお送りしました。ご確認ください。
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <p className="text-lg font-medium text-gray-800 mb-6">
+            当日のセッションを楽しみにしております。
           </p>
 
           <div className="mt-6">
-          <Button
-          variant="outline"
-          onClick={() => {
-          setStep(1);
-          setSelectedDate(null);
-          setSelectedTimeSlot(null);
-          setSessionType(null);
-          setUserInfo({
-          name: '',
-          email: '',
-          phone: '',
-          remarks: ''
-          });
-          setReservationData(null);
-          }}
-          >
-          最初に戻る
-          </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setStep(1);
+                setSelectedDate(null);
+                setSelectedTimeSlot(null);
+                setSessionType(null);
+                setSessionTypeOption(null);
+                setUserInfo({
+                  name: '',
+                  email: '',
+                  phone: '',
+                  remarks: ''
+                });
+                setReservationData(null);
+              }}
+            >
+              最初に戻る
+            </Button>
           </div>
         </div>
       )}

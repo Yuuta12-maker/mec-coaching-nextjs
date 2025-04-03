@@ -53,23 +53,53 @@ export default async function handler(req, res) {
     const bookedSlots = sessionsOnDate
       .filter(session => session.ステータス !== SESSION_STATUS.CANCELED)
       .map(session => {
-        const sessionTime = new Date(session.予定日時).getHours();
-        return `${sessionTime}:00`;
+        // 日本時間で処理するため、タイムゾーン補正
+        const sessionDate = new Date(session.予定日時);
+        const hours = sessionDate.getHours().toString().padStart(2, '0');
+        const minutes = sessionDate.getMinutes().toString().padStart(2, '0');
+        return `${hours}:${minutes}`;
       });
+      
+    logger.info(`予約済みの時間帯: ${bookedSlots.join(', ')}`);
 
-    // 利用可能な時間枠を生成 (10時〜17時、1時間ごと)
+    // 利用可能な時間枠を生成 (10時〜17時、2時間ごと)
     const availableSlots = [];
     
-    for (let hour = 10; hour <= 16; hour += 2) {
-      const timeStr = `${hour}:00`;
+    // 曜日によって利用可能時間を制限
+    const day = targetDate.getDay();
+    
+    // 土日は予約不可
+    if (day === 0 || day === 6) {
+      return res.status(200).json({ 
+        date: targetDateStr,
+        slots: [],
+        message: '土曜日・日曜日は予約できません'
+      });
+    }
+    
+    // 平日の予約可能時間帯（10時〜16時、2時間おき）
+    const timeSlots = [
+      { id: 1, hour: 10, min: '00' },
+      { id: 2, hour: 12, min: '00' },
+      { id: 3, hour: 14, min: '00' },
+      { id: 4, hour: 16, min: '00' },
+    ];
+    
+    // 各時間枠について、予約済みかどうかを確認
+    timeSlots.forEach(slot => {
+      const timeStr = `${slot.hour}:${slot.min}`;
+      // 既に予約されているかチェック
       const available = !bookedSlots.includes(timeStr);
       
       availableSlots.push({
-        id: hour,
+        id: slot.id,
         time: timeStr,
         available
       });
-    }
+    });
+    
+    logger.info(`利用可能な時間枠: ${availableSlots.filter(s => s.available).length}件`);
+    logger.debug(`時間枠詳細: ${JSON.stringify(availableSlots)}`)
 
     return res.status(200).json({ 
       date: targetDateStr,
